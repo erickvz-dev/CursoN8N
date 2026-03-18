@@ -1,0 +1,518 @@
+{
+  "name": "Sprint5 - Captura de Gastos",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "b9cff9eb-4a43-4deb-96b0-5f4ff7f009ce",
+      "name": "01 - Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -176,
+        1216
+      ],
+      "webhookId": "17999010-e624-4859-ac63-2ef682cd9d92",
+      "credentials": {
+        "telegramApi": {
+          "id": "xVHAjlbHy3mILPIX",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "372e3029-0f09-42b4-9ab8-a9e049ce7e4b",
+              "leftValue": "={{ !!($json.message && $json.message.photo) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6bdb9ccf-24c0-4d10-93f8-a6a21acced62",
+      "name": "02 - Switch Solo Foto",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        48,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "❌ Solo puedo procesar fotos del ticket. Por favor envía una imagen.",
+        "additionalFields": {}
+      },
+      "id": "11fef1fc-f6f2-45f2-85a8-f3245692c612",
+      "name": "03 - Notify Unsupported",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        1312
+      ],
+      "webhookId": "24973a0a-5c82-4cb6-a2c6-0bfb4324e157",
+      "credentials": {
+        "telegramApi": {
+          "id": "xVHAjlbHy3mILPIX",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}",
+        "additionalFields": {}
+      },
+      "id": "6daa880d-33dd-4676-8798-8fe932bfcb86",
+      "name": "04 - Telegram Get File",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        1120
+      ],
+      "webhookId": "50fa1126-9145-4333-bf02-3b0cf3dca35a",
+      "credentials": {
+        "telegramApi": {
+          "id": "xVHAjlbHy3mILPIX",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "text": "=Analiza esta imagen de un ticket de gasto y extrae la siguiente información:\n\n- fecha: en formato DD/MM/YYYY\n- empleado: nombre completo (usa \"{{ $('01 - Telegram Trigger').item.json.message.from.first_name }} {{ $('01 - Telegram Trigger').item.json.message.from.last_name }}\" si no está en el ticket)\n- monto: valor numérico con 2 decimales\n- categoria: debe ser una de estas opciones: \"comida\", \"transporte\", \"materiales\", \"otro\"\n\nResponde ÚNICAMENTE con un objeto JSON válido sin markdown:\n{\"fecha\":\"DD/MM/YYYY\",\"empleado\":\"Nombre Completo\",\"monto\":0.00,\"categoria\":\"comida\"}\n\nSi no puedes leer la imagen claramente, responde:\n{\"error\":\"no_legible\"}",
+        "inputType": "base64",
+        "options": {
+          "maxTokens": 300
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.7,
+      "position": [
+        496,
+        1120
+      ],
+      "id": "90f3c692-010c-494a-b95d-4edebf50edfb",
+      "name": "05 - OpenAI Vision",
+      "credentials": {
+        "openAiApi": {
+          "id": "SNcq9lmxwYGcZb6e",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const trigger = $('01 - Telegram Trigger').item.json;\n  const chatId = trigger.message?.chat?.id?.toString() || null;\n  const response = $input.first()?.json ?? {};\n\n  const fail = (msg = \"❌ No pude leer la imagen. Por favor intenta con otra foto más clara del ticket.\") => [\n    { json: { ok: false, chat_id: chatId, error_message: msg } }\n  ];\n\n  let data;\n\n  // Caso 1: El nodo OpenAI devolvió los campos directamente como JSON\n  if (response.fecha || response.monto || response.empleado || response.categoria) {\n    data = response;\n  } else {\n    // Caso 2: La respuesta viene como texto que hay que extraer y parsear\n    const extractText = (payload) => {\n      if (!payload) return null;\n      if (typeof payload === \"string\") return payload;\n      if (payload.choices?.[0]?.message?.content) return payload.choices[0].message.content;\n      if (Array.isArray(payload.output)) {\n        for (const item of payload.output) {\n          if (item?.type === \"message\" && Array.isArray(item.content)) {\n            const textChunk = item.content.find((c) => c?.type === \"output_text\");\n            if (textChunk?.text) return textChunk.text;\n          }\n        }\n      }\n      if (payload.message?.content) return payload.message.content;\n      if (payload.content) return payload.content;\n      if (payload.text) return payload.text;\n      return null;\n    };\n\n    let rawText = extractText(response);\n    if (!rawText) return fail();\n    rawText = String(rawText).trim().replace(/^\\s*```(?:json)?\\s*/i, \"\").replace(/\\s*```\\s*$/i, \"\").trim();\n\n    try {\n      data = typeof rawText === \"string\" ? JSON.parse(rawText) : rawText;\n    } catch (e) {\n      return fail(\"❌ No pude procesar la respuesta. Intenta con otra foto más clara.\");\n    }\n  }\n\n  if (!data || typeof data !== \"object\") return fail();\n  if (data.error === \"no_legible\") return fail();\n\n  const fecha = (data.fecha ?? \"\").toString().trim();\n  const empleado = (data.empleado ?? \"\").toString().trim();\n  const monto = parseFloat(data.monto);\n  let categoria = (data.categoria ?? \"\").toString().trim().toLowerCase();\n  const categoriasValidas = [\"comida\", \"transporte\", \"materiales\", \"otro\"];\n  if (!categoriasValidas.includes(categoria)) categoria = \"otro\";\n\n  const fechaValida = /^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/.test(fecha);\n  if (!fechaValida || !empleado || !Number.isFinite(monto) || monto <= 0) {\n    return fail(\"❌ Datos incompletos en el ticket. Verifica que se vean claramente: fecha, monto y categoría.\");\n  }\n\n  return [{\n    json: {\n      ok: true,\n      chat_id: chatId,\n      Fecha: fecha,\n      Empleado: empleado,\n      Monto: monto,\n      Categoria: categoria,\n      Estado: \"Pendiente\"\n    }\n  }];\n} catch (e) {\n  const fallbackChatId = $('01 - Telegram Trigger').item.json.message?.chat?.id?.toString() || null;\n  return [{\n    json: {\n      ok: false,\n      chat_id: fallbackChatId,\n      error_message: \"❌ Error procesando la imagen. Por favor intenta nuevamente.\"\n    }\n  }];\n}"
+      },
+      "id": "456ceab3-13e0-455b-90b2-5a24094230f3",
+      "name": "06 - Parse & Prepare",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "e290c1be-9b6a-4a8d-bcbb-5d292729e69e",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b114fc13-fa79-4375-8ded-e78dad2e5193",
+      "name": "07 - Switch OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        944,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.error_message }}",
+        "additionalFields": {}
+      },
+      "id": "c71eaa33-ada4-415b-a0f3-14535f9bcde1",
+      "name": "08 - Notify Error",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1168,
+        1216
+      ],
+      "webhookId": "470232d9-d812-4f78-b577-00bcef0908eb",
+      "credentials": {
+        "telegramApi": {
+          "id": "xVHAjlbHy3mILPIX",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "Gastos",
+          "mode": "list",
+          "cachedResultName": "Gastos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "empleado": "={{ $json.Empleado }}",
+            "monto": "={{ $json.Monto }}",
+            "categoria": "={{ $json.Categoria }}",
+            "estado": "={{ $json.Estado }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "empleado",
+              "displayName": "empleado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "monto",
+              "displayName": "monto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "queryBatching": "independently"
+        }
+      },
+      "id": "22cdaab1-1b16-49fb-8fc7-c7d1df05567b",
+      "name": "09 - Postgres Insert Gastos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1168,
+        1024
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "btpuoO30ePtQTuXg",
+          "name": "BD Gastos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d8f3e8a0-1234-5678-9abc-def012345678",
+              "name": "gasto_id",
+              "value": "={{ $json.id }}",
+              "type": "number"
+            },
+            {
+              "id": "d8f3e8a0-1234-5678-9abc-def012345679",
+              "name": "resumen_gerente",
+              "value": "=🧾 Nuevo gasto registrado\n\n👤 Empleado: {{ $('06 - Parse & Prepare').item.json.Empleado }}\n💰 Monto: ${{ $('06 - Parse & Prepare').item.json.Monto }}\n📁 Categoría: {{ $('06 - Parse & Prepare').item.json.Categoria }}\n📅 Fecha: {{ $('06 - Parse & Prepare').item.json.Fecha }}\n🆔 ID: {{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "d8f3e8a0-1234-5678-9abc-def012345680",
+              "name": "chat_id_colaborador",
+              "value": "={{ $('06 - Parse & Prepare').item.json.chat_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cd3274fe-06b9-47cd-b453-e0f6265404e5",
+      "name": "10 - Build Manager Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1392,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot{TU_BOT_TOKEN}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $('01 - Telegram Trigger').item.json.message.chat.id, text: $json.resumen_gerente, reply_markup: { inline_keyboard: [[{ text: '✅ Aprobar', callback_data: 'aprobar_' + $json.gasto_id }, { text: '❌ Rechazar', callback_data: 'rechazar_' + $json.gasto_id }]] } }) }}",
+        "options": {}
+      },
+      "id": "aa5769a3-b256-4e91-9b9d-bd9898b7e738",
+      "name": "11 - Notify Manager",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1616,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('10 - Build Manager Summary').item.json.chat_id_colaborador }}",
+        "text": "=✅ Tu gasto ha sido registrado correctamente.\n\n💰 Monto: ${{ $('06 - Parse & Prepare').item.json.Monto }}\n📁 Categoría: {{ $('06 - Parse & Prepare').item.json.Categoria }}\n📅 Fecha: {{ $('06 - Parse & Prepare').item.json.Fecha }}\n\n⏳ Estado: Pendiente de aprobación",
+        "additionalFields": {}
+      },
+      "id": "ac63b278-4cf3-4d58-99b6-f1ecabbc4813",
+      "name": "12 - Confirm to User",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1840,
+        1024
+      ],
+      "webhookId": "6a7fcbe6-daac-4aeb-9cf0-d1621fe51373",
+      "credentials": {
+        "telegramApi": {
+          "id": "xVHAjlbHy3mILPIX",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01 - Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "02 - Switch Solo Foto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - Switch Solo Foto": {
+      "main": [
+        [
+          {
+            "node": "04 - Telegram Get File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "03 - Notify Unsupported",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 - Telegram Get File": {
+      "main": [
+        [
+          {
+            "node": "05 - OpenAI Vision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 - OpenAI Vision": {
+      "main": [
+        [
+          {
+            "node": "06 - Parse & Prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 - Parse & Prepare": {
+      "main": [
+        [
+          {
+            "node": "07 - Switch OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 - Switch OK": {
+      "main": [
+        [
+          {
+            "node": "09 - Postgres Insert Gastos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "08 - Notify Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09 - Postgres Insert Gastos": {
+      "main": [
+        [
+          {
+            "node": "10 - Build Manager Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 - Build Manager Summary": {
+      "main": [
+        [
+          {
+            "node": "11 - Notify Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 - Notify Manager": {
+      "main": [
+        [
+          {
+            "node": "12 - Confirm to User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "7fba729b-fac1-452f-b0ca-f1db7ee0cdfd",
+  "meta": {
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "PnJrtlkzFli2eFLb",
+  "tags": []
+}

@@ -1,0 +1,500 @@
+{
+  "name": "Workflow: Instagram Analytics (10 Posts)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        220,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v21.0/me/accounts?fields=instagram_business_account,name",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "http-get-my-id",
+      "name": "HTTP: Get IG Accounts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        360
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_ME",
+          "name": "Instagram Graph API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-ig-user-id",
+              "name": "ig_user_id",
+              "value": "={{ ($json.data || []).find(acc => acc.instagram_business_account)?.instagram_business_account?.id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-page-name",
+              "name": "page_name",
+              "value": "={{ ($json.data || []).find(acc => acc.instagram_business_account)?.name || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-resolve-account",
+      "name": "Set: Resolve IG Account",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-has-ig-id",
+              "leftValue": "={{ $json.ig_user_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-ig-account-found",
+      "name": "IF: IG Account Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        880,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-success",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "field-error",
+              "name": "error",
+              "value": "No se encontro una pagina de Facebook con cuenta de Instagram Business conectada.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-error-no-account",
+      "name": "Set: Error No IG Account",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1100,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v21.0/{{ $json.ig_user_id }}/media",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,caption,permalink,timestamp,media_type,like_count,comments_count"
+            },
+            {
+              "name": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-get-media",
+      "name": "HTTP: Get Media (10)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        320
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_ME",
+          "name": "Instagram Graph API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split-posts",
+      "name": "Split Out: Posts",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-post-id",
+              "name": "post_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "field-post-date",
+              "name": "post_date",
+              "value": "={{ ($json.timestamp || '').split('T')[0] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-media-type",
+              "name": "media_type",
+              "value": "={{ $json.media_type || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-caption",
+              "name": "caption",
+              "value": "={{ $json.caption || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-caption-short",
+              "name": "caption_short",
+              "value": "={{ $json.caption ? ($json.caption.length > 80 ? $json.caption.substring(0, 80) + '...' : $json.caption) : 'Sin caption' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-permalink",
+              "name": "permalink",
+              "value": "={{ $json.permalink || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "field-likes",
+              "name": "likes",
+              "value": "={{ Number($json.like_count || 0) }}",
+              "type": "number"
+            },
+            {
+              "id": "field-comments",
+              "name": "comments",
+              "value": "={{ Number($json.comments_count || 0) }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-post-base",
+      "name": "Set: Post Base",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1540,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v21.0/{{ $json.post_id }}/insights",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "metric",
+              "value": "impressions,reach,saved,shares"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "http-insights",
+      "name": "HTTP: Get Insights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        320
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_ME",
+          "name": "Instagram Graph API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result-post-id",
+              "name": "post_id",
+              "value": "={{ $('Set: Post Base').item.json.post_id }}",
+              "type": "string"
+            },
+            {
+              "id": "result-post-date",
+              "name": "post_date",
+              "value": "={{ $('Set: Post Base').item.json.post_date }}",
+              "type": "string"
+            },
+            {
+              "id": "result-media-type",
+              "name": "media_type",
+              "value": "={{ $('Set: Post Base').item.json.media_type }}",
+              "type": "string"
+            },
+            {
+              "id": "result-caption-short",
+              "name": "caption_short",
+              "value": "={{ $('Set: Post Base').item.json.caption_short }}",
+              "type": "string"
+            },
+            {
+              "id": "result-permalink",
+              "name": "permalink",
+              "value": "={{ $('Set: Post Base').item.json.permalink }}",
+              "type": "string"
+            },
+            {
+              "id": "result-likes",
+              "name": "likes",
+              "value": "={{ $('Set: Post Base').item.json.likes || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "result-comments",
+              "name": "comments",
+              "value": "={{ $('Set: Post Base').item.json.comments || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "result-impressions",
+              "name": "impressions",
+              "value": "={{ $json.data ? ($json.data.find(m => m.name === 'impressions')?.values[0]?.value || 0) : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "result-reach",
+              "name": "reach",
+              "value": "={{ $json.data ? ($json.data.find(m => m.name === 'reach')?.values[0]?.value || 0) : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "result-saved",
+              "name": "saved",
+              "value": "={{ $json.data ? ($json.data.find(m => m.name === 'saved')?.values[0]?.value || 0) : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "result-shares",
+              "name": "shares",
+              "value": "={{ $json.data ? ($json.data.find(m => m.name === 'shares')?.values[0]?.value || 0) : 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "result-interactions",
+              "name": "interactions",
+              "value": "={{ ($('Set: Post Base').item.json.likes || 0) + ($('Set: Post Base').item.json.comments || 0) + ($json.data ? ($json.data.find(m => m.name === 'saved')?.values[0]?.value || 0) : 0) + ($json.data ? ($json.data.find(m => m.name === 'shares')?.values[0]?.value || 0) : 0) }}",
+              "type": "number"
+            },
+            {
+              "id": "result-engagement-rate",
+              "name": "engagement_rate",
+              "value": "={{ Number((((($('Set: Post Base').item.json.likes || 0) + ($('Set: Post Base').item.json.comments || 0) + ($json.data ? ($json.data.find(m => m.name === 'saved')?.values[0]?.value || 0) : 0) + ($json.data ? ($json.data.find(m => m.name === 'shares')?.values[0]?.value || 0) : 0)) / (($json.data ? ($json.data.find(m => m.name === 'reach')?.values[0]?.value || 0) : 0) || 1)) * 100).toFixed(2)) }}",
+              "type": "number"
+            },
+            {
+              "id": "result-insights-available",
+              "name": "insights_available",
+              "value": "={{ Array.isArray($json.data) && $json.data.length > 0 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "result-insights-error",
+              "name": "insights_error",
+              "value": "={{ $json.error?.message || $json.message || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "result-ai-summary",
+              "name": "ai_summary",
+              "value": "=Post ({{ $('Set: Post Base').item.json.media_type }}) del {{ $('Set: Post Base').item.json.post_date }}: {{ $('Set: Post Base').item.json.likes }} likes, {{ $('Set: Post Base').item.json.comments }} coms, {{ $json.data ? ($json.data.find(m => m.name === 'saved')?.values[0]?.value || 0) : 0 }} saves, {{ $json.data ? ($json.data.find(m => m.name === 'shares')?.values[0]?.value || 0) : 0 }} shares. Alcance: {{ $json.data ? ($json.data.find(m => m.name === 'reach')?.values[0]?.value || 0) : 0 }}. ER: {{ Number((((($('Set: Post Base').item.json.likes || 0) + ($('Set: Post Base').item.json.comments || 0) + ($json.data ? ($json.data.find(m => m.name === 'saved')?.values[0]?.value || 0) : 0) + ($json.data ? ($json.data.find(m => m.name === 'shares')?.values[0]?.value || 0) : 0)) / (($json.data ? ($json.data.find(m => m.name === 'reach')?.values[0]?.value || 0) : 0) || 1)) * 100).toFixed(2)) }}%",
+              "type": "string"
+            },
+            {
+              "id": "result-prompt-context",
+              "name": "prompt_context",
+              "value": "={{ $json.ai_summary }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-result",
+      "name": "Set: Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1980,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Get IG Accounts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Get IG Accounts": {
+      "main": [
+        [
+          {
+            "node": "Set: Resolve IG Account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Resolve IG Account": {
+      "main": [
+        [
+          {
+            "node": "IF: IG Account Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: IG Account Found": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Get Media (10)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set: Error No IG Account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Get Media (10)": {
+      "main": [
+        [
+          {
+            "node": "Split Out: Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out: Posts": {
+      "main": [
+        [
+          {
+            "node": "Set: Post Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Post Base": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Get Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Get Insights": {
+      "main": [
+        [
+          {
+            "node": "Set: Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

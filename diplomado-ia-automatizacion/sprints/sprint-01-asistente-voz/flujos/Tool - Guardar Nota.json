@@ -1,0 +1,211 @@
+{
+  "name": "Tool - Guardar Nota",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "🧩 Sub-agente: Guardar Nota (Tool)\n\nQué hace:\n- Este workflow se ejecuta como *tool* desde el Agente principal.\n- Recibe `chatId` y `texto`.\n- Guarda la nota en Google Sheets (hoja: `notas`).\n- Devuelve `resultado` (string) para que el agente lo mande al usuario.\n\nDiseño:\n- Aquí NO se envía nada a Telegram. Solo se persiste y se regresa texto.",
+        "height": 250,
+        "width": 540
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        208
+      ],
+      "id": "f7cbd400-2ecf-4838-8b70-32e0eafe736e",
+      "name": "🟨 Nota - Overview"
+    },
+    {
+      "parameters": {
+        "content": "🚪 Trigger del sub-workflow\n\n- Se ejecuta únicamente cuando otro workflow lo llama (Tool).\n- `jsonExample` describe el payload esperado:\n  - chatId (number/string)\n  - texto (string)\n\nTip:\n- Mantén estable la forma del input para no romper al Agente.",
+        "height": 690,
+        "width": 212
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -272
+      ],
+      "id": "2bbbae73-7563-4f97-8637-2b74bfb558db",
+      "name": "🟨 Nota - Trigger (Tool input)"
+    },
+    {
+      "parameters": {
+        "content": "💾 Persistencia: Google Sheets (append)\n\n- Operación: `append` agrega una fila al final.\n- Campos guardados:\n  - `chatId`\n  - `texto`\n  - `createdAt` (ISO)\n\nBuenas prácticas:\n- `createdAt` permite ordenar y filtrar.\n- Si planeas buscar/recuperar notas luego, considera:\n  - agregar `tipo` o `tags`\n  - normalizar `texto` (trim)\n  - limitar tamaño de texto para evitar filas gigantes.",
+        "height": 692,
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        816,
+        -272
+      ],
+      "id": "98587dff-d49b-450d-98c5-245e9dce63d8",
+      "name": "🟨 Nota - Guardado en Sheets"
+    },
+    {
+      "parameters": {
+        "content": "✅ Respuesta de éxito\n\n- Devuelve `resultado` como string:\n  `📝 Nota guardada: <texto>`\n\nTip UX:\n- Si el texto es muy largo, puedes recortarlo:\n  - mostrar solo los primeros 100-150 caracteres\n  - o confirmar con un resumen.",
+        "height": 686,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        -272
+      ],
+      "id": "68f7b9aa-5023-4e47-87c8-8ca1e0431efc",
+      "name": "🟨 Nota - Respuesta"
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"chatId\": 123,\n  \"texto\": \"Texto de la nota\"\n}"
+      },
+      "id": "8eb98df0-dab9-4db3-8bd2-23a398b13584",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        640,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "MemoriaAsistenteIA"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 705121881,
+          "mode": "list",
+          "cachedResultName": "notas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=705121881"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatId": "={{ $json.chatId }}",
+            "texto": "={{ $json.texto }}",
+            "createdAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "createdAt",
+              "displayName": "createdAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        864,
+        256
+      ],
+      "id": "78b68b15-adbd-42ed-b7c6-a286b4e16476",
+      "name": "Guardar Nota1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "resultado",
+              "value": "=📝 Nota guardada: {{ $json.texto }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1088,
+        256
+      ],
+      "id": "b0b19f39-087f-45c6-97bc-9cd3866dadba",
+      "name": "Respuesta1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Guardar Nota1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar Nota1": {
+      "main": [
+        [
+          {
+            "node": "Respuesta1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "261f5e11-e6de-4b17-bd21-9c75448fc050",
+  "meta": {
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "hTBUJXh727B0Lhjh",
+  "tags": []
+}

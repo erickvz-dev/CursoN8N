@@ -1,0 +1,14 @@
+{
+  "_comment": "Template base para flujos n8n en el diplomado",
+  "name": "[S0] Nombre del Flujo",
+  "nodes": [],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    { "name": "diplomado" },
+    { "name": "sprint-00" }
+  ]
+}

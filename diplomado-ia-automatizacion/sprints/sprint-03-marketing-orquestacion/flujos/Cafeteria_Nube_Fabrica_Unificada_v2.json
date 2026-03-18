@@ -1,0 +1,2082 @@
+{
+  "updatedAt": "2026-02-21T10:27:55.805Z",
+  "createdAt": "2026-02-07T00:11:47.540Z",
+  "id": "uc3hA5KQV8SDsr7t2KJ57",
+  "name": "Cafetería Nube - Fábrica Unificada v2",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "description": "Updates the tracking Google Sheet with new information for an item.\n\nInput:\n- id (string, required): The item ID (e.g., \"NUBE-20260214-post-01\")\n- updates (object, required): Fields to update. Common fields:\n  - status (string): \"pending\", \"processing\", \"asset_ready\", \"done\", \"failed\"\n  - step (string): Current processing step\n  - canva_export_url (string): Canva design URL\n  - heygen_video_url (string): HeyGen video URL\n  - drive_file_url (string): Google Drive file URL\n  - error_message (string): Error description if failed\n  - updated_at (string): ISO timestamp\n\nOutput:\n- success (boolean): Whether update succeeded\n- action (string): \"updated\" or \"inserted\"\n- row_number (number): Row in sheet\n\nExample:\n{\n  \"id\": \"NUBE-20260214-post-01\",\n  \"updates\": {\n    \"status\": \"processing\",\n    \"step\": \"generating_image\",\n    \"updated_at\": \"2026-02-09T12:00:00Z\"\n  }\n}\n\nUse this tool:\n- After marking item as processing\n- After creating assets (to save URLs)\n- After uploading to Drive\n- After completion (status=done)\n- On errors (status=failed)",
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_SUBFLOW_UPDATE_SHEET_ID",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/YOUR_SUBFLOW_UPDATE_SHEET_ID",
+          "cachedResultName": "Subflujo: Update Sheet"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', ``, 'string') }}",
+            "updates": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('updates', ``, 'json') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "updates",
+              "displayName": "updates",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "3622faba-1c8d-410e-9b1c-d3218a69421d",
+      "name": "update_sheet",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3808,
+        2720
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Creates an image asset using Gemini for AI generation and Canva for design.\n\nInput:\n- id (string, required): Item ID\n- tipo (string, required): \"post\" or \"story\"\n- titulo (string, required): Title for the Canva design\n- idea (string): Content idea description\n- tono (string): Tone (default: \"cálido, cercano\")\n- estilo_visual (string): Visual style (default: \"lifestyle, luz natural\")\n- prompt_imagen (string, required): Detailed prompt for Gemini image generation\n- aspect_ratio (string): \"1:1\" for posts, \"9:16\" for stories (default: \"1:1\")\n\nOutput:\n- success (boolean): Whether creation succeeded\n- status (string): \"success\" or \"failed\"\n- canva_edit_url (string): URL to edit design in Canva\n- canva_design_id (string): Canva design ID\n- canva_asset_id (string): Canva asset ID\n- error (string): Error message if failed\n\nThis tool takes approximately 30-60 seconds to complete (Gemini generation + Canva upload).\n\nExample:\n{\n  \"id\": \"NUBE-20260214-post-01\",\n  \"tipo\": \"post\",\n  \"titulo\": \"Promo San Valentín\",\n  \"idea\": \"Dos capuchinos con arte latte\",\n  \"tono\": \"cálido, cercano\",\n  \"estilo_visual\": \"lifestyle, luz natural\",\n  \"prompt_imagen\": \"fotografía lifestyle de dos tazas de capuchino con arte latte de corazones, sobre mesa de madera clara, luz natural suave, composición centrada, fondo minimalista, sin texto, sin logos\",\n  \"aspect_ratio\": \"1:1\"\n}",
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_SUBFLOW_IMAGE_PIPELINE_ID",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/YOUR_SUBFLOW_IMAGE_PIPELINE_ID",
+          "cachedResultName": "Subflow: Image Pipeline (Gemini → Canva)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', ``, 'string') }}",
+            "tipo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tipo', ``, 'string') }}",
+            "titulo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('titulo', ``, 'string') }}",
+            "idea": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('idea', ``, 'string') }}",
+            "tono": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tono', ``, 'string') }}",
+            "estilo_visual": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('estilo_visual', ``, 'string') }}",
+            "prompt_imagen": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('prompt_imagen', ``, 'string') }}",
+            "aspect_ratio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('aspect_ratio', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "idea",
+              "displayName": "idea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tono",
+              "displayName": "tono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "estilo_visual",
+              "displayName": "estilo_visual",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "prompt_imagen",
+              "displayName": "prompt_imagen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "aspect_ratio",
+              "displayName": "aspect_ratio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "1aab4097-2832-4e27-8c3c-34bffb71b34c",
+      "name": "create_image",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3936,
+        2720
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Creates a video asset using HeyGen AI avatar.\n\nInput:\n- id (string, required): Item ID\n- titulo (string, required): Title for the video\n- script_video (string, required): Script for the AI avatar to speak (keep under 500 characters for best results)\n- duracion_sec (number): Target duration in seconds (default: 10)\n- aspect_ratio (string): \"9:16\" for stories/reels, \"16:9\" for horizontal (default: \"9:16\")\n\nOutput:\n- success (boolean): Whether creation succeeded\n- status (string): \"completed\" or \"failed\"\n- video_url (string): URL to download the rendered video\n- video_id (string): HeyGen video ID\n- error (string): Error message if failed\n\nThis tool takes approximately 5-10 minutes to complete due to HeyGen rendering time. The tool polls HeyGen's API every 10 seconds until the video is ready.\n\nExample:\n{\n  \"id\": \"NUBE-20260214-reel-01\",\n  \"titulo\": \"Promo San Valentín\",\n  \"script_video\": \"Este 14 de febrero celebra el amor con nuestros capuchinos especiales. Dos por uno en todas nuestras bebidas. Te esperamos en Cafetería Nube.\",\n  \"duracion_sec\": 15,\n  \"aspect_ratio\": \"9:16\"\n}",
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_SUBFLOW_HEYGEN_ID",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/YOUR_SUBFLOW_HEYGEN_ID",
+          "cachedResultName": "Subflujo: HeyGen Generate video"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', ``, 'string') }}",
+            "titulo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('titulo', ``, 'string') }}",
+            "script_video": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('script_video', ``, 'string') }}",
+            "duracion_sec": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('duracion_sec', ``, 'number') }}",
+            "aspect_ratio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('aspect_ratio', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "script_video",
+              "displayName": "script_video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "duracion_sec",
+              "displayName": "duracion_sec",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "aspect_ratio",
+              "displayName": "aspect_ratio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "41848d59-70ba-4747-b4f4-4fdc2a399f2d",
+      "name": "create_video",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        4064,
+        2720
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cafeteria-nube/brief",
+        "responseMode": "responseNode",
+        "options": {
+          "ignoreBots": true
+        }
+      },
+      "id": "d1d67ea5-2926-471f-acd0-405e97e3abdc",
+      "name": "Recibir Brief Semanal",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2336,
+        2336
+      ],
+      "webhookId": "cafeteria-nube-brief-v3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.semana_iso }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "b29bea22-56c6-4dfc-af39-37b58f0e02d7"
+            },
+            {
+              "leftValue": "={{ $json.body.cantidad_piezas }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "id": "58580041-57a4-4e93-a9e4-3a6bd1feb24d"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "43188869-70c6-4ed3-b7d2-6b050fd034e1",
+      "name": "¿Brief válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        2336
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "brief_id",
+              "value": "={{ $json.body.semana_iso }}-{{ $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "semana_iso",
+              "value": "={{ $json.body.semana_iso }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "objetivo_semana",
+              "value": "={{ $json.body.objetivo_semana }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "promos_eventos",
+              "value": "={{ $json.body.promos_eventos }}",
+              "type": "array"
+            },
+            {
+              "id": "a5",
+              "name": "posts_imagen",
+              "value": "={{ $json.body.mix_contenido.posts_imagen }}",
+              "type": "number"
+            },
+            {
+              "id": "a6",
+              "name": "stories",
+              "value": "={{ $json.body.mix_contenido.stories }}",
+              "type": "number"
+            },
+            {
+              "id": "a7",
+              "name": "reels",
+              "value": "={{ $json.body.mix_contenido.reels }}",
+              "type": "number"
+            },
+            {
+              "id": "a8",
+              "name": "total_piezas",
+              "value": "={{ $json.body.mix_contenido.posts_imagen + $json.body.mix_contenido.stories + $json.body.mix_contenido.reels }}",
+              "type": "number"
+            },
+            {
+              "id": "a9",
+              "name": "duracion_sec",
+              "value": "={{ $json.body.duracion_sec || 10 }}",
+              "type": "number"
+            },
+            {
+              "id": "a10",
+              "name": "brief",
+              "value": "={{ { semana_iso: $json.body.semana_iso, cantidad_piezas: ($json.body.mix_contenido.posts_imagen + $json.body.mix_contenido.stories + $json.body.mix_contenido.reels), duracion_sec: ($json.body.duracion_sec || 10), objetivo_semana: $json.body.objetivo_semana, promos_eventos: $json.body.promos_eventos, mix_contenido: $json.body.mix_contenido, ig_user_id: ($json.body.ig_user_id || \"\"), drive_folder_id: ($json.body.drive_folder_id || \"\"), file_proxy_base_url: ($json.body.file_proxy_base_url || \"\"), publish_to_instagram: ($json.body.publish_to_instagram !== false) } }}",
+              "type": "object"
+            },
+            {
+              "id": "a11",
+              "name": "ig_user_id",
+              "value": "={{ $json.body.ig_user_id || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "a12",
+              "name": "drive_folder_id",
+              "value": "={{ $json.body.drive_folder_id || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "a13",
+              "name": "publish_to_instagram",
+              "value": "={{ $json.body.publish_to_instagram !== false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "a14",
+              "name": "file_proxy_base_url",
+              "value": "={{ $json.body.file_proxy_base_url || \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4d0b0a07-6bca-4a7f-b892-1b6ab4d29f0c",
+      "name": "Preparar Datos del Brief",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2784,
+        2240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: \"Brief aceptado. Procesando en segundo plano...\", brief_id: $json.brief_id, total_piezas: $json.total_piezas, tiempo_estimado: \"10-20 minutos\" } }}",
+        "options": {}
+      },
+      "id": "b3817c5d-cbe9-4567-8c0b-6a1918f31641",
+      "name": "Responder: Procesando...",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3008,
+        2144
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, error: \"Brief inválido\", message: \"Falta semana_iso o cantidad_piezas\" } }}",
+        "options": {}
+      },
+      "id": "e748e9e0-0124-4948-a0ea-d2b3ff568fe4",
+      "name": "Responder: Brief Inválido",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2784,
+        2432
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_SUBFLOW_CONTENT_PLAN_ID",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/YOUR_SUBFLOW_CONTENT_PLAN_ID",
+          "cachedResultName": "Subflujo: Generate Content Plan"
+        },
+        "options": {}
+      },
+      "id": "82fb32ea-1474-4299-a3e6-a019fbd32853",
+      "name": "Generar Plan de Contenido",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        3008,
+        2352
+      ],
+      "executeOnce": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Procesa este item siguiendo el flujo obligatorio:\n\n- ID: {{ $('Generar Plan de Contenido').item.json.id }}\n- Tipo: {{ $('Generar Plan de Contenido').item.json.tipo }}\n- Asset Type: {{ $('Generar Plan de Contenido').item.json.tipo === \"post\" ? \"image\" : \"video\" }}}}\n- Título: {{ $('Generar Plan de Contenido').item.json.titulo }}\n- Idea: {{ $('Generar Plan de Contenido').item.json.idea }}\n- Tono: {{ $('Generar Plan de Contenido').item.json.tono }}\n- Estilo Visual: {{ $('Generar Plan de Contenido').item.json.estilo_visual }}\n- Prompt Imagen: {{ $('Generar Plan de Contenido').item.json.prompt_imagen }}\n- Caption: {{ $('Generar Plan de Contenido').item.json.caption }}\n- Aspect Ratio: {{ $('Generar Plan de Contenido').item.json.aspect_ratio }}\n- Duración (sec): {{ $('Generar Plan de Contenido').item.json.duration_seconds === 0 ? 10 : $('Generar Plan de Contenido').item.json.duration_seconds }}\n- Script Video: {{ $('Generar Plan de Contenido').item.json.script_video }}\n- Drive Folder ID: {{ $json.drive_folder_id }}\n- Instagram User ID: {{ $json.ig_user_id }}\n- Publicar en Instagram: {{ $json.publish_to_instagram }}\n- File Proxy Base URL: {{ $json.file_proxy_base_url }}",
+        "options": {
+          "systemMessage": "=Eres un productor de contenido metódico y confiable.\n\nREGLAS CRÍTICAS:\n- Tu fuente de verdad es el Google Sheet (tool: update_sheet)\n- NUNCA proceses el mismo item dos veces\n- SIEMPRE verifica el status en el sheet antes de actuar\n- Si status=\"done\", \"published\" o \"processing\" al inicio, NO hagas nada más\n- Actualiza el sheet después de CADA acción importante\n- Si algo falla, marca status=\"failed\" con el error\n- No inventes URLs, usa solo las que devuelven los tools\n- Requiere drive_folder_id e ig_user_id para completar publicación\n\nFLUJO OBLIGATORIO (END-TO-END):\n1. Llama a \"update_sheet\" con status=\"processing\", step=\"generating\"\n2. Si asset_type=\"image\" -> llama a \"create_image\"\n   Si asset_type=\"video\" -> llama a \"create_video\"\n3. Llama a \"update_sheet\" con status=\"asset_ready\", step=\"asset_ready\" y URLs generadas\n4. Llama a \"upload_to_drive\"\n   - image: usar canva_design_id + filename + folder_id + asset_type\n   - video: usar url=heygen_video_url + heygen_video_id + heygen_api_key + filename + folder_id + asset_type\n5. Llama a \"update_sheet\" con status=\"uploaded\", step=\"uploaded\", drive_file_url y final_asset_url\n6. Si publish_to_instagram=true, llama a \"publish_instagram\" con id, tipo, final_asset_url, caption, ig_user_id y file_proxy_base_url (si usas Drive privado)\n7. Llama a \"update_sheet\" final:\n   - Si publicación exitosa: status=\"published\", step=\"completed\", published=true, published_at, instagram_id/permalink cuando existan\n   - Si publicación desactivada: status=\"done\", step=\"completed\"\n   - Si falla publicar: status=\"failed\", step=\"publish_failed\", publication_error\n",
+          "maxIterations": 10
+        }
+      },
+      "id": "4965118a-3676-4b5b-9ca3-90b76708e8ae",
+      "name": "AI AGENT: Producer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        3984,
+        2464
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        3680,
+        2720
+      ],
+      "id": "bbcdfae9-938f-4221-a32d-688bc8ae1bd7",
+      "name": "LLM: GPT-4o-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        4192,
+        2720
+      ],
+      "id": "9a3a6f57-0313-4bc4-8c69-c0b59ea15ee6",
+      "name": "Think",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "batchSize": "=1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        3456,
+        2352
+      ],
+      "id": "3f65a2e3-a032-464c-865e-baaca4a258d4",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "sendTo": "tu@email.com",
+        "subject": "=La fabrica ha terminado  {{ $('Recibir Brief Semanal').item.json.body.semana_iso }}",
+        "message": "=Tu brief {{ $('Preparar Datos del Brief').item.json.brief_id }}\n\nPara la semana: {{ $('Preparar Datos del Brief').item.json.semana_iso }}\n\nGeneró lo siguiente: \nImagenes: {{ $('Preparar Datos del Brief').item.json.posts_imagen }}\nStories: {{ $('Preparar Datos del Brief').item.json.stories }}\nReels: {{ $('Preparar Datos del Brief').item.json.reels }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        4064,
+        2192
+      ],
+      "id": "4b800a6a-68e2-4459-a7c9-4b3484c9b761",
+      "name": "Send a message",
+      "webhookId": "b92d2988-abac-4818-985f-3dca23acc8ae",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg1",
+              "name": "ig_user_id",
+              "value": "={{ $json.ig_user_id || $('Preparar Datos del Brief').first().json.ig_user_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "cfg2",
+              "name": "drive_folder_id",
+              "value": "={{ $json.drive_folder_id || $('Preparar Datos del Brief').first().json.drive_folder_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "cfg3",
+              "name": "publish_to_instagram",
+              "value": "={{ ($json.publish_to_instagram ?? $('Preparar Datos del Brief').first().json.publish_to_instagram ?? true) }}",
+              "type": "boolean"
+            },
+            {
+              "id": "cfg4",
+              "name": "filename",
+              "value": "={{ $json.filename || ($json.id + ($json.asset_type === 'video' ? '.mp4' : '.png')) }}",
+              "type": "string"
+            },
+            {
+              "id": "cfg5",
+              "name": "file_proxy_base_url",
+              "value": "={{ $json.file_proxy_base_url || $('Preparar Datos del Brief').first().json.file_proxy_base_url || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7571f2f1-f854-449b-8b5d-0f7d1931fc36",
+      "name": "Set: Config Publicacion",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3232,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Downloads a generated asset (Canva or direct URL), uploads it to Google Drive, and returns a final public URL.\n\nInput:\n- url (string): Source URL (use HeyGen video URL for videos)\n- canva_design_id (string): Canva design ID (use for image assets)\n- filename (string, required): Final file name (for example NUBE-20260214-post-01.png)\n- folder_id (string, required): Google Drive folder ID\n- asset_type (string, required): \"image\" or \"video\"\n\nOutput:\n- success (boolean)\n- drive_file_id (string)\n- drive_file_url (string)\n- final_asset_url (string)\n- error (string, when failed)\n- heygen_video_id (string, optional): HeyGen video id to refresh a valid downloadable URL\n- heygen_api_key (string, optional): HeyGen API key used to refresh video URL in upload subflow",
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_SUBFLOW_UPLOAD_DRIVE_ID",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/YOUR_SUBFLOW_UPLOAD_DRIVE_ID",
+          "cachedResultName": "Subflujo: Upload to Drive"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('url', ``, 'string') }}",
+            "canva_design_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('canva_design_id', ``, 'string') }}",
+            "filename": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filename', ``, 'string') }}",
+            "folder_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('folder_id', ``, 'string') }}",
+            "asset_type": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('asset_type', ``, 'string') }}",
+            "heygen_video_id": "={ /*n8n-auto-generated-fromAI-override*/ $fromAI('heygen_video_id', ``, 'string') }",
+            "heygen_api_key": "={ /*n8n-auto-generated-fromAI-override*/ $fromAI('heygen_api_key', ``, 'string') }"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "canva_design_id",
+              "displayName": "canva_design_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "filename",
+              "displayName": "filename",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "folder_id",
+              "displayName": "folder_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "asset_type",
+              "displayName": "asset_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "heygen_video_id",
+              "displayName": "heygen_video_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "heygen_api_key",
+              "displayName": "heygen_api_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "a42110bb-045a-423a-bc8f-8bde66e2fe61",
+      "name": "upload_to_drive",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        4320,
+        2720
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Publishes an asset URL to Instagram (post, story, or reel) using the configured instagramApi credential.\n\nInput:\n- id (string, required): Content item ID\n- tipo (string, required): \"post\", \"story\", or \"reel\"\n- final_asset_url (string, required): Public media URL to publish\n- caption (string): Post caption\n- ig_user_id (string, required): Instagram Business Account user ID\n\nOutput:\n- success (boolean)\n- instagram_response (object)\n- error (string, when failed)\n- file_proxy_base_url (string, optional): Base URL of your n8n instance to proxy Drive files, example https://tu-instancia.n8n.cloud",
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_SUBFLOW_PUBLISH_IG_ID",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/YOUR_SUBFLOW_PUBLISH_IG_ID",
+          "cachedResultName": "Subflujo: Publish Instagram"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', ``, 'string') }}",
+            "tipo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tipo', ``, 'string') }}",
+            "final_asset_url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('final_asset_url', ``, 'string') }}",
+            "caption": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('caption', ``, 'string') }}",
+            "ig_user_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ig_user_id', ``, 'string') }}",
+            "file_proxy_base_url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('file_proxy_base_url', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "final_asset_url",
+              "displayName": "final_asset_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "ig_user_id",
+              "displayName": "ig_user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "file_proxy_base_url",
+              "displayName": "file_proxy_base_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "a38fcdbf-2037-4150-99ff-c6f4ec0e0b48",
+      "name": "publish_instagram",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        4448,
+        2720
+      ]
+    }
+  ],
+  "connections": {
+    "update_sheet": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT: Producer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_image": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT: Producer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_video": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT: Producer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recibir Brief Semanal": {
+      "main": [
+        [
+          {
+            "node": "¿Brief válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Brief válido?": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos del Brief",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder: Brief Inválido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos del Brief": {
+      "main": [
+        [
+          {
+            "node": "Responder: Procesando...",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generar Plan de Contenido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Plan de Contenido": {
+      "main": [
+        [
+          {
+            "node": "Set: Config Publicacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: GPT-4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI AGENT: Producer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT: Producer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI AGENT: Producer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI AGENT: Producer": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Set: Config Publicacion": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_to_drive": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT: Producer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "publish_instagram": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI AGENT: Producer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "Recibir Brief Semanal": [
+      {
+        "json": {
+          "headers": {
+            "connection": "close",
+            "host": "TU_INSTANCIA.n8n.cloud",
+            "x-real-ip": "172.18.0.2",
+            "x-forwarded-for": "187.232.26.224, 172.18.0.2",
+            "x-forwarded-proto": "http",
+            "content-length": "502",
+            "x-forwarded-host": "TU_INSTANCIA.n8n.cloud",
+            "x-forwarded-ssl": "on",
+            "x-forwarded-port": "443",
+            "x-original-uri": "/webhook-test/cafeteria-nube/brief",
+            "sec-ch-ua-platform": "\"macOS\"",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Not:A-Brand\";v=\"99\", \"Brave\";v=\"145\", \"Chromium\";v=\"145\"",
+            "content-type": "application/json",
+            "sec-ch-ua-mobile": "?0",
+            "accept": "*/*",
+            "sec-gpc": "1",
+            "accept-language": "en-US,en;q=0.7",
+            "origin": "http://127.0.0.1:5500",
+            "sec-fetch-site": "cross-site",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "empty",
+            "referer": "http://127.0.0.1:5500/",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "priority": "u=1, i"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "semana_iso": "2026-W7",
+            "cantidad_piezas": 7,
+            "duracion_sec": 10,
+            "objetivo_semana": "Promocionar cafes de temporada, San Valentin y Generar comunidad",
+            "promos_eventos": [
+              {
+                "fecha": "2026-02-14",
+                "promo": "2x1 en cafe"
+              },
+              {
+                "fecha": "2026-02-10",
+                "promo": "Pan artesanal al 20% dcto "
+              }
+            ],
+            "mix_contenido": {
+              "posts_imagen": 3,
+              "stories": 2,
+              "reels": 2
+            },
+            "drive_folder_id": "TU_DRIVE_FOLDER_ID",
+            "ig_user_id": "TU_IG_USER_ID",
+            "file_proxy_base_url": "https://TU_INSTANCIA.n8n.cloud",
+            "publish_to_instagram": true
+          },
+          "webhookUrl": "https://TU_INSTANCIA.n8n.cloud/webhook-test/cafeteria-nube/brief",
+          "executionMode": "test"
+        }
+      }
+    ]
+  },
+  "versionId": "8e554578-d551-4007-ba3a-c1f94c2aee44",
+  "activeVersionId": "8e554578-d551-4007-ba3a-c1f94c2aee44",
+  "versionCounter": 520,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-07T00:11:47.893Z",
+      "createdAt": "2026-02-07T00:11:47.893Z",
+      "role": "workflow:owner",
+      "workflowId": "uc3hA5KQV8SDsr7t2KJ57",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-21T09:56:48.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-21",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T11:06:26.000Z",
+    "createdAt": "2026-02-21T10:27:55.807Z",
+    "versionId": "8e554578-d551-4007-ba3a-c1f94c2aee44",
+    "workflowId": "uc3hA5KQV8SDsr7t2KJ57",
+    "nodes": [
+      {
+        "parameters": {
+          "description": "Updates the tracking Google Sheet with new information for an item.\n\nInput:\n- id (string, required): The item ID (e.g., \"NUBE-20260214-post-01\")\n- updates (object, required): Fields to update. Common fields:\n  - status (string): \"pending\", \"processing\", \"asset_ready\", \"done\", \"failed\"\n  - step (string): Current processing step\n  - canva_export_url (string): Canva design URL\n  - heygen_video_url (string): HeyGen video URL\n  - drive_file_url (string): Google Drive file URL\n  - error_message (string): Error description if failed\n  - updated_at (string): ISO timestamp\n\nOutput:\n- success (boolean): Whether update succeeded\n- action (string): \"updated\" or \"inserted\"\n- row_number (number): Row in sheet\n\nExample:\n{\n  \"id\": \"NUBE-20260214-post-01\",\n  \"updates\": {\n    \"status\": \"processing\",\n    \"step\": \"generating_image\",\n    \"updated_at\": \"2026-02-09T12:00:00Z\"\n  }\n}\n\nUse this tool:\n- After marking item as processing\n- After creating assets (to save URLs)\n- After uploading to Drive\n- After completion (status=done)\n- On errors (status=failed)",
+          "workflowId": {
+            "__rl": true,
+            "value": "YOUR_SUBFLOW_UPDATE_SHEET_ID",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/YOUR_SUBFLOW_UPDATE_SHEET_ID",
+            "cachedResultName": "Subflujo: Update Sheet"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', ``, 'string') }}",
+              "updates": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('updates', ``, 'json') }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "updates",
+                "displayName": "updates",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "object"
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          }
+        },
+        "id": "3622faba-1c8d-410e-9b1c-d3218a69421d",
+        "name": "update_sheet",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          3808,
+          2720
+        ]
+      },
+      {
+        "parameters": {
+          "description": "Creates an image asset using Gemini for AI generation and Canva for design.\n\nInput:\n- id (string, required): Item ID\n- tipo (string, required): \"post\" or \"story\"\n- titulo (string, required): Title for the Canva design\n- idea (string): Content idea description\n- tono (string): Tone (default: \"cálido, cercano\")\n- estilo_visual (string): Visual style (default: \"lifestyle, luz natural\")\n- prompt_imagen (string, required): Detailed prompt for Gemini image generation\n- aspect_ratio (string): \"1:1\" for posts, \"9:16\" for stories (default: \"1:1\")\n\nOutput:\n- success (boolean): Whether creation succeeded\n- status (string): \"success\" or \"failed\"\n- canva_edit_url (string): URL to edit design in Canva\n- canva_design_id (string): Canva design ID\n- canva_asset_id (string): Canva asset ID\n- error (string): Error message if failed\n\nThis tool takes approximately 30-60 seconds to complete (Gemini generation + Canva upload).\n\nExample:\n{\n  \"id\": \"NUBE-20260214-post-01\",\n  \"tipo\": \"post\",\n  \"titulo\": \"Promo San Valentín\",\n  \"idea\": \"Dos capuchinos con arte latte\",\n  \"tono\": \"cálido, cercano\",\n  \"estilo_visual\": \"lifestyle, luz natural\",\n  \"prompt_imagen\": \"fotografía lifestyle de dos tazas de capuchino con arte latte de corazones, sobre mesa de madera clara, luz natural suave, composición centrada, fondo minimalista, sin texto, sin logos\",\n  \"aspect_ratio\": \"1:1\"\n}",
+          "workflowId": {
+            "__rl": true,
+            "value": "YOUR_SUBFLOW_IMAGE_PIPELINE_ID",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/YOUR_SUBFLOW_IMAGE_PIPELINE_ID",
+            "cachedResultName": "Subflow: Image Pipeline (Gemini → Canva)"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', ``, 'string') }}",
+              "tipo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tipo', ``, 'string') }}",
+              "titulo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('titulo', ``, 'string') }}",
+              "idea": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('idea', ``, 'string') }}",
+              "tono": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tono', ``, 'string') }}",
+              "estilo_visual": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('estilo_visual', ``, 'string') }}",
+              "prompt_imagen": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('prompt_imagen', ``, 'string') }}",
+              "aspect_ratio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('aspect_ratio', ``, 'string') }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "tipo",
+                "displayName": "tipo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "titulo",
+                "displayName": "titulo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "idea",
+                "displayName": "idea",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "tono",
+                "displayName": "tono",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "estilo_visual",
+                "displayName": "estilo_visual",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "prompt_imagen",
+                "displayName": "prompt_imagen",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "aspect_ratio",
+                "displayName": "aspect_ratio",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          }
+        },
+        "id": "1aab4097-2832-4e27-8c3c-34bffb71b34c",
+        "name": "create_image",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          3936,
+          2720
+        ]
+      },
+      {
+        "parameters": {
+          "description": "Creates a video asset using HeyGen AI avatar.\n\nInput:\n- id (string, required): Item ID\n- titulo (string, required): Title for the video\n- script_video (string, required): Script for the AI avatar to speak (keep under 500 characters for best results)\n- duracion_sec (number): Target duration in seconds (default: 10)\n- aspect_ratio (string): \"9:16\" for stories/reels, \"16:9\" for horizontal (default: \"9:16\")\n\nOutput:\n- success (boolean): Whether creation succeeded\n- status (string): \"completed\" or \"failed\"\n- video_url (string): URL to download the rendered video\n- video_id (string): HeyGen video ID\n- error (string): Error message if failed\n\nThis tool takes approximately 5-10 minutes to complete due to HeyGen rendering time. The tool polls HeyGen's API every 10 seconds until the video is ready.\n\nExample:\n{\n  \"id\": \"NUBE-20260214-reel-01\",\n  \"titulo\": \"Promo San Valentín\",\n  \"script_video\": \"Este 14 de febrero celebra el amor con nuestros capuchinos especiales. Dos por uno en todas nuestras bebidas. Te esperamos en Cafetería Nube.\",\n  \"duracion_sec\": 15,\n  \"aspect_ratio\": \"9:16\"\n}",
+          "workflowId": {
+            "__rl": true,
+            "value": "YOUR_SUBFLOW_HEYGEN_ID",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/YOUR_SUBFLOW_HEYGEN_ID",
+            "cachedResultName": "Subflujo: HeyGen Generate video"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', ``, 'string') }}",
+              "titulo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('titulo', ``, 'string') }}",
+              "script_video": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('script_video', ``, 'string') }}",
+              "duracion_sec": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('duracion_sec', ``, 'number') }}",
+              "aspect_ratio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('aspect_ratio', ``, 'string') }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "titulo",
+                "displayName": "titulo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "script_video",
+                "displayName": "script_video",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "duracion_sec",
+                "displayName": "duracion_sec",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "number"
+              },
+              {
+                "id": "aspect_ratio",
+                "displayName": "aspect_ratio",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          }
+        },
+        "id": "41848d59-70ba-4747-b4f4-4fdc2a399f2d",
+        "name": "create_video",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          4064,
+          2720
+        ]
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "cafeteria-nube/brief",
+          "responseMode": "responseNode",
+          "options": {
+            "ignoreBots": true
+          }
+        },
+        "id": "d1d67ea5-2926-471f-acd0-405e97e3abdc",
+        "name": "Recibir Brief Semanal",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          2336,
+          2336
+        ],
+        "webhookId": "cafeteria-nube-brief-v3"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.body.semana_iso }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                },
+                "id": "b29bea22-56c6-4dfc-af39-37b58f0e02d7"
+              },
+              {
+                "leftValue": "={{ $json.body.cantidad_piezas }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                },
+                "id": "58580041-57a4-4e93-a9e4-3a6bd1feb24d"
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "43188869-70c6-4ed3-b7d2-6b050fd034e1",
+        "name": "¿Brief válido?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          2560,
+          2336
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "a1",
+                "name": "brief_id",
+                "value": "={{ $json.body.semana_iso }}-{{ $now.toMillis() }}",
+                "type": "string"
+              },
+              {
+                "id": "a2",
+                "name": "semana_iso",
+                "value": "={{ $json.body.semana_iso }}",
+                "type": "string"
+              },
+              {
+                "id": "a3",
+                "name": "objetivo_semana",
+                "value": "={{ $json.body.objetivo_semana }}",
+                "type": "string"
+              },
+              {
+                "id": "a4",
+                "name": "promos_eventos",
+                "value": "={{ $json.body.promos_eventos }}",
+                "type": "array"
+              },
+              {
+                "id": "a5",
+                "name": "posts_imagen",
+                "value": "={{ $json.body.mix_contenido.posts_imagen }}",
+                "type": "number"
+              },
+              {
+                "id": "a6",
+                "name": "stories",
+                "value": "={{ $json.body.mix_contenido.stories }}",
+                "type": "number"
+              },
+              {
+                "id": "a7",
+                "name": "reels",
+                "value": "={{ $json.body.mix_contenido.reels }}",
+                "type": "number"
+              },
+              {
+                "id": "a8",
+                "name": "total_piezas",
+                "value": "={{ $json.body.mix_contenido.posts_imagen + $json.body.mix_contenido.stories + $json.body.mix_contenido.reels }}",
+                "type": "number"
+              },
+              {
+                "id": "a9",
+                "name": "duracion_sec",
+                "value": "={{ $json.body.duracion_sec || 10 }}",
+                "type": "number"
+              },
+              {
+                "id": "a10",
+                "name": "brief",
+                "value": "={{ { semana_iso: $json.body.semana_iso, cantidad_piezas: ($json.body.mix_contenido.posts_imagen + $json.body.mix_contenido.stories + $json.body.mix_contenido.reels), duracion_sec: ($json.body.duracion_sec || 10), objetivo_semana: $json.body.objetivo_semana, promos_eventos: $json.body.promos_eventos, mix_contenido: $json.body.mix_contenido, ig_user_id: ($json.body.ig_user_id || \"\"), drive_folder_id: ($json.body.drive_folder_id || \"\"), file_proxy_base_url: ($json.body.file_proxy_base_url || \"\"), publish_to_instagram: ($json.body.publish_to_instagram !== false) } }}",
+                "type": "object"
+              },
+              {
+                "id": "a11",
+                "name": "ig_user_id",
+                "value": "={{ $json.body.ig_user_id || \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "a12",
+                "name": "drive_folder_id",
+                "value": "={{ $json.body.drive_folder_id || \"\" }}",
+                "type": "string"
+              },
+              {
+                "id": "a13",
+                "name": "publish_to_instagram",
+                "value": "={{ $json.body.publish_to_instagram !== false }}",
+                "type": "boolean"
+              },
+              {
+                "id": "a14",
+                "name": "file_proxy_base_url",
+                "value": "={{ $json.body.file_proxy_base_url || \"\" }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "4d0b0a07-6bca-4a7f-b892-1b6ab4d29f0c",
+        "name": "Preparar Datos del Brief",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2784,
+          2240
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { success: true, message: \"Brief aceptado. Procesando en segundo plano...\", brief_id: $json.brief_id, total_piezas: $json.total_piezas, tiempo_estimado: \"10-20 minutos\" } }}",
+          "options": {}
+        },
+        "id": "b3817c5d-cbe9-4567-8c0b-6a1918f31641",
+        "name": "Responder: Procesando...",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          3008,
+          2144
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { success: false, error: \"Brief inválido\", message: \"Falta semana_iso o cantidad_piezas\" } }}",
+          "options": {}
+        },
+        "id": "e748e9e0-0124-4948-a0ea-d2b3ff568fe4",
+        "name": "Responder: Brief Inválido",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          2784,
+          2432
+        ]
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "YOUR_SUBFLOW_CONTENT_PLAN_ID",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/YOUR_SUBFLOW_CONTENT_PLAN_ID",
+            "cachedResultName": "Subflujo: Generate Content Plan"
+          },
+          "options": {}
+        },
+        "id": "82fb32ea-1474-4299-a3e6-a019fbd32853",
+        "name": "Generar Plan de Contenido",
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.1,
+        "position": [
+          3008,
+          2352
+        ],
+        "executeOnce": false,
+        "retryOnFail": false
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Procesa este item siguiendo el flujo obligatorio:\n\n- ID: {{ $('Generar Plan de Contenido').item.json.id }}\n- Tipo: {{ $('Generar Plan de Contenido').item.json.tipo }}\n- Asset Type: {{ $('Generar Plan de Contenido').item.json.tipo === \"post\" ? \"image\" : \"video\" }}}}\n- Título: {{ $('Generar Plan de Contenido').item.json.titulo }}\n- Idea: {{ $('Generar Plan de Contenido').item.json.idea }}\n- Tono: {{ $('Generar Plan de Contenido').item.json.tono }}\n- Estilo Visual: {{ $('Generar Plan de Contenido').item.json.estilo_visual }}\n- Prompt Imagen: {{ $('Generar Plan de Contenido').item.json.prompt_imagen }}\n- Caption: {{ $('Generar Plan de Contenido').item.json.caption }}\n- Aspect Ratio: {{ $('Generar Plan de Contenido').item.json.aspect_ratio }}\n- Duración (sec): {{ $('Generar Plan de Contenido').item.json.duration_seconds === 0 ? 10 : $('Generar Plan de Contenido').item.json.duration_seconds }}\n- Script Video: {{ $('Generar Plan de Contenido').item.json.script_video }}\n- Drive Folder ID: {{ $json.drive_folder_id }}\n- Instagram User ID: {{ $json.ig_user_id }}\n- Publicar en Instagram: {{ $json.publish_to_instagram }}\n- File Proxy Base URL: {{ $json.file_proxy_base_url }}",
+          "options": {
+            "systemMessage": "=Eres un productor de contenido metódico y confiable.\n\nREGLAS CRÍTICAS:\n- Tu fuente de verdad es el Google Sheet (tool: update_sheet)\n- NUNCA proceses el mismo item dos veces\n- SIEMPRE verifica el status en el sheet antes de actuar\n- Si status=\"done\", \"published\" o \"processing\" al inicio, NO hagas nada más\n- Actualiza el sheet después de CADA acción importante\n- Si algo falla, marca status=\"failed\" con el error\n- No inventes URLs, usa solo las que devuelven los tools\n- Requiere drive_folder_id e ig_user_id para completar publicación\n\nFLUJO OBLIGATORIO (END-TO-END):\n1. Llama a \"update_sheet\" con status=\"processing\", step=\"generating\"\n2. Si asset_type=\"image\" -> llama a \"create_image\"\n   Si asset_type=\"video\" -> llama a \"create_video\"\n3. Llama a \"update_sheet\" con status=\"asset_ready\", step=\"asset_ready\" y URLs generadas\n4. Llama a \"upload_to_drive\"\n   - image: usar canva_design_id + filename + folder_id + asset_type\n   - video: usar url=heygen_video_url + filename + folder_id + asset_type\n5. Llama a \"update_sheet\" con status=\"uploaded\", step=\"uploaded\", drive_file_url y final_asset_url\n6. Si publish_to_instagram=true, llama a \"publish_instagram\" con id, tipo, final_asset_url, caption, ig_user_id y file_proxy_base_url (si usas Drive privado)\n7. Llama a \"update_sheet\" final:\n   - Si publicación exitosa: status=\"published\", step=\"completed\", published=true, published_at, instagram_id/permalink cuando existan\n   - Si publicación desactivada: status=\"done\", step=\"completed\"\n   - Si falla publicar: status=\"failed\", step=\"publish_failed\", publication_error\n",
+            "maxIterations": 10
+          }
+        },
+        "id": "4965118a-3676-4b5b-9ca3-90b76708e8ae",
+        "name": "AI AGENT: Producer",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.9,
+        "position": [
+          3984,
+          2464
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "gpt-4o-mini",
+            "mode": "list",
+            "cachedResultName": "gpt-4o-mini"
+          },
+          "builtInTools": {},
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.3,
+        "position": [
+          3680,
+          2720
+        ],
+        "id": "bbcdfae9-938f-4221-a32d-688bc8ae1bd7",
+        "name": "LLM: GPT-4o-mini",
+        "credentials": {
+          "openAiApi": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {},
+        "type": "@n8n/n8n-nodes-langchain.toolThink",
+        "typeVersion": 1.1,
+        "position": [
+          4192,
+          2720
+        ],
+        "id": "9a3a6f57-0313-4bc4-8c69-c0b59ea15ee6",
+        "name": "Think",
+        "disabled": true
+      },
+      {
+        "parameters": {
+          "batchSize": "=1",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          3456,
+          2352
+        ],
+        "id": "3f65a2e3-a032-464c-865e-baaca4a258d4",
+        "name": "Loop Over Items"
+      },
+      {
+        "parameters": {
+          "sendTo": "tu@email.com",
+          "subject": "=La fabrica ha terminado  {{ $('Recibir Brief Semanal').item.json.body.semana_iso }}",
+          "message": "=Tu brief {{ $('Preparar Datos del Brief').item.json.brief_id }}\n\nPara la semana: {{ $('Preparar Datos del Brief').item.json.semana_iso }}\n\nGeneró lo siguiente: \nImagenes: {{ $('Preparar Datos del Brief').item.json.posts_imagen }}\nStories: {{ $('Preparar Datos del Brief').item.json.stories }}\nReels: {{ $('Preparar Datos del Brief').item.json.reels }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          4064,
+          2192
+        ],
+        "id": "4b800a6a-68e2-4459-a7c9-4b3484c9b761",
+        "name": "Send a message",
+        "webhookId": "b92d2988-abac-4818-985f-3dca23acc8ae",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "Gmail account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "cfg1",
+                "name": "ig_user_id",
+                "value": "={{ $json.ig_user_id || $('Preparar Datos del Brief').first().json.ig_user_id || '' }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg2",
+                "name": "drive_folder_id",
+                "value": "={{ $json.drive_folder_id || $('Preparar Datos del Brief').first().json.drive_folder_id || '' }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg3",
+                "name": "publish_to_instagram",
+                "value": "={{ ($json.publish_to_instagram ?? $('Preparar Datos del Brief').first().json.publish_to_instagram ?? true) }}",
+                "type": "boolean"
+              },
+              {
+                "id": "cfg4",
+                "name": "filename",
+                "value": "={{ $json.filename || ($json.id + ($json.asset_type === 'video' ? '.mp4' : '.png')) }}",
+                "type": "string"
+              },
+              {
+                "id": "cfg5",
+                "name": "file_proxy_base_url",
+                "value": "={{ $json.file_proxy_base_url || $('Preparar Datos del Brief').first().json.file_proxy_base_url || '' }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "7571f2f1-f854-449b-8b5d-0f7d1931fc36",
+        "name": "Set: Config Publicacion",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3232,
+          2352
+        ]
+      },
+      {
+        "parameters": {
+          "description": "Downloads a generated asset (Canva or direct URL), uploads it to Google Drive, and returns a final public URL.\n\nInput:\n- url (string): Source URL (use HeyGen video URL for videos)\n- canva_design_id (string): Canva design ID (use for image assets)\n- filename (string, required): Final file name (for example NUBE-20260214-post-01.png)\n- folder_id (string, required): Google Drive folder ID\n- asset_type (string, required): \"image\" or \"video\"\n\nOutput:\n- success (boolean)\n- drive_file_id (string)\n- drive_file_url (string)\n- final_asset_url (string)\n- error (string, when failed)",
+          "workflowId": {
+            "__rl": true,
+            "value": "YOUR_SUBFLOW_UPLOAD_DRIVE_ID",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/YOUR_SUBFLOW_UPLOAD_DRIVE_ID",
+            "cachedResultName": "Subflujo: Upload to Drive"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('url', ``, 'string') }}",
+              "canva_design_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('canva_design_id', ``, 'string') }}",
+              "filename": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filename', ``, 'string') }}",
+              "folder_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('folder_id', ``, 'string') }}",
+              "asset_type": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('asset_type', ``, 'string') }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "url",
+                "displayName": "url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "canva_design_id",
+                "displayName": "canva_design_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "filename",
+                "displayName": "filename",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "folder_id",
+                "displayName": "folder_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "asset_type",
+                "displayName": "asset_type",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          }
+        },
+        "id": "a42110bb-045a-423a-bc8f-8bde66e2fe61",
+        "name": "upload_to_drive",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          4320,
+          2720
+        ]
+      },
+      {
+        "parameters": {
+          "description": "Publishes an asset URL to Instagram (post, story, or reel) using the configured instagramApi credential.\n\nInput:\n- id (string, required): Content item ID\n- tipo (string, required): \"post\", \"story\", or \"reel\"\n- final_asset_url (string, required): Public media URL to publish\n- caption (string): Post caption\n- ig_user_id (string, required): Instagram Business Account user ID\n\nOutput:\n- success (boolean)\n- instagram_response (object)\n- error (string, when failed)\n- file_proxy_base_url (string, optional): Base URL of your n8n instance to proxy Drive files, example https://tu-instancia.n8n.cloud",
+          "workflowId": {
+            "__rl": true,
+            "value": "YOUR_SUBFLOW_PUBLISH_IG_ID",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/YOUR_SUBFLOW_PUBLISH_IG_ID",
+            "cachedResultName": "Subflujo: Publish Instagram"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('id', ``, 'string') }}",
+              "tipo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tipo', ``, 'string') }}",
+              "final_asset_url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('final_asset_url', ``, 'string') }}",
+              "caption": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('caption', ``, 'string') }}",
+              "ig_user_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ig_user_id', ``, 'string') }}",
+              "file_proxy_base_url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('file_proxy_base_url', ``, 'string') }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "tipo",
+                "displayName": "tipo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "final_asset_url",
+                "displayName": "final_asset_url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "caption",
+                "displayName": "caption",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "ig_user_id",
+                "displayName": "ig_user_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              },
+              {
+                "id": "file_proxy_base_url",
+                "displayName": "file_proxy_base_url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string"
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          }
+        },
+        "id": "a38fcdbf-2037-4150-99ff-c6f4ec0e0b48",
+        "name": "publish_instagram",
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 2.2,
+        "position": [
+          4448,
+          2720
+        ]
+      }
+    ],
+    "connections": {
+      "update_sheet": {
+        "ai_tool": [
+          [
+            {
+              "node": "AI AGENT: Producer",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "create_image": {
+        "ai_tool": [
+          [
+            {
+              "node": "AI AGENT: Producer",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "create_video": {
+        "ai_tool": [
+          [
+            {
+              "node": "AI AGENT: Producer",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Recibir Brief Semanal": {
+        "main": [
+          [
+            {
+              "node": "¿Brief válido?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Brief válido?": {
+        "main": [
+          [
+            {
+              "node": "Preparar Datos del Brief",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder: Brief Inválido",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar Datos del Brief": {
+        "main": [
+          [
+            {
+              "node": "Responder: Procesando...",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Generar Plan de Contenido",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generar Plan de Contenido": {
+        "main": [
+          [
+            {
+              "node": "Set: Config Publicacion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "LLM: GPT-4o-mini": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI AGENT: Producer",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Think": {
+        "ai_tool": [
+          [
+            {
+              "node": "AI AGENT: Producer",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Over Items": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "AI AGENT: Producer",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI AGENT: Producer": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send a message": {
+        "main": [
+          []
+        ]
+      },
+      "Set: Config Publicacion": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "upload_to_drive": {
+        "ai_tool": [
+          [
+            {
+              "node": "AI AGENT: Producer",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "publish_instagram": {
+        "ai_tool": [
+          [
+            {
+              "node": "AI AGENT: Producer",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Tu Nombre",
+    "name": "Version 8e554578",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-21T11:06:26.114Z",
+        "id": 128,
+        "workflowId": "uc3hA5KQV8SDsr7t2KJ57",
+        "versionId": "8e554578-d551-4007-ba3a-c1f94c2aee44",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      }
+    ]
+  }
+}

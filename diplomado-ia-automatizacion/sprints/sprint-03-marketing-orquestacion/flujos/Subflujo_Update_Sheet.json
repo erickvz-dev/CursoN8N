@@ -1,0 +1,1261 @@
+{
+  "updatedAt": "2026-02-21T10:00:16.538Z",
+  "createdAt": "2026-02-07T03:26:28.059Z",
+  "id": "mRaD5EgTTFLKGo6D0R82h",
+  "name": "Subflujo: Update Sheet",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id"
+            },
+            {
+              "name": "updates",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        -144
+      ],
+      "id": "023cf76f-500a-4ce0-93df-97dd7847e884",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube_v2"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        320,
+        -144
+      ],
+      "id": "865bf95b-13b9-457f-bc98-932043f1e03e",
+      "name": "Read: Existing Sheet Data",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allRows = $('Read: Existing Sheet Data').all();\nconst inputItems = $('When Executed by Another Workflow').all();\nconst now = new Date().toISOString();\n\nreturn inputItems.map(inputItem => {\n  const id = inputItem.json.id;\n  const updates = inputItem.json.updates ?? {};\n\n  if (!id || typeof id !== 'string') {\n    throw new Error('Update Sheet: input.id es requerido y debe ser string');\n  }\n\n  // Buscar fila existente en el Sheet\n  const existingRow = allRows.find(r => r.json.id === id);\n  \n  // Merge: datos existentes + updates nuevos\n  const mergedRow = {\n    ...(existingRow?.json || {}),\n    ...updates,\n    id: id,\n    updated_at: now\n  };\n\n  return { json: mergedRow };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        -144
+      ],
+      "id": "54494347-8e34-420d-a1bb-223dae6c5392",
+      "name": "Code: Merge Existing + Updates"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube_v2"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "fecha_objetivo": "={{ $json.fecha_objetivo }}",
+            "tipo": "={{ $json.tipo }}",
+            "objetivo": "={{ $json.objetivo }}",
+            "titulo": "={{ $json.titulo }}",
+            "idea": "={{ $json.idea }}",
+            "tono": "={{ $json.tono }}",
+            "estilo_visual": "={{ $json.estilo_visual }}",
+            "prompt_imagen": "={{ $json.prompt_imagen }}",
+            "caption": "={{ $json.caption }}",
+            "status": "={{ $json.status }}",
+            "image_url": "={{ $json.image_url }}",
+            "canva_export_url": "={{ $json.canva_export_url }}",
+            "error_message": "={{ $json.error_message }}",
+            "created_at": "={{ $json.created_at }}",
+            "updated_at": "={{ $json.updated_at }}",
+            "asset_type": "={{ $json.asset_type }}",
+            "aspect_ratio": "={{ $json.aspect_ratio }}",
+            "duracion_sec": "={{ $json.duracion_sec }}",
+            "script_video": "={{ $json.script_video }}",
+            "heygen_video_id": "={{ $json.heygen_video_id }}",
+            "heygen_video_url": "={{ $json.heygen_video_url }}",
+            "drive_file_url": "={{ $json.drive_file_url }}",
+            "final_asset_url": "={{ $json.final_asset_url }}",
+            "step": "={{ $json.step }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_objetivo",
+              "displayName": "fecha_objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "objetivo",
+              "displayName": "objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "idea",
+              "displayName": "idea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tono",
+              "displayName": "tono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estilo_visual",
+              "displayName": "estilo_visual",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_imagen",
+              "displayName": "prompt_imagen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "canva_export_url",
+              "displayName": "canva_export_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "asset_type",
+              "displayName": "asset_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "aspect_ratio",
+              "displayName": "aspect_ratio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "duracion_sec",
+              "displayName": "duracion_sec",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "script_video",
+              "displayName": "script_video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "heygen_video_id",
+              "displayName": "heygen_video_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "heygen_video_url",
+              "displayName": "heygen_video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "drive_file_url",
+              "displayName": "drive_file_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "final_asset_url",
+              "displayName": "final_asset_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "step",
+              "displayName": "step",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        976,
+        -144
+      ],
+      "id": "140ccdaf-5e26-4c91-9f40-92da9aed6d70",
+      "name": "Google Sheets: appendOrUpdate",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// CRÍTICO: Devolver toda la data del item original + confirmación de actualización\nconst originalInput = $node[\"When Executed by Another Workflow\"].json;\nconst sheetResult = $input.first().json;\n\n// Merge: data original + updates aplicados + confirmación\nconst output = {\n  ...originalInput,\n  ...originalInput.updates,\n  success: true,\n  sheet_updated: true,\n  updated_at: new Date().toISOString()\n};\n\n// Limpiar el objeto 'updates' anidado para evitar confusión\ndelete output.updates;\n\nreturn { json: output };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -144
+      ],
+      "id": "f1b21249-4397-49a3-b13f-c1d6ea5ea13f",
+      "name": "Code: Return Full Context"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f4c0bcd1-5be6-4497-9c61-978759d47144",
+              "leftValue": "={{ $json }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        528,
+        -144
+      ],
+      "id": "6a0626b5-992f-4953-8073-9c7392977fd7",
+      "name": "If"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Read: Existing Sheet Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read: Existing Sheet Data": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Merge Existing + Updates": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: appendOrUpdate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: appendOrUpdate": {
+      "main": [
+        [
+          {
+            "node": "Code: Return Full Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code: Merge Existing + Updates",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Merge Existing + Updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "id": "NUBE-20260208-post-01",
+          "updates": {
+            "fecha_objetivo": "2026-02-08",
+            "tipo": "post",
+            "objetivo": "promocionar café de temporada",
+            "titulo": "Café de temporada: Sabor que enamora",
+            "idea": "Presentar el café de temporada que estará disponible para San Valentín. Poner énfasis en su sabor único y en la experiencia artesanal.",
+            "tono": "cálido, cercano",
+            "estilo_visual": "lifestyle, luz natural",
+            "prompt_imagen": "fotografía lifestyle, luz natural suave, composición centrada, colores cálidos y terrosos, fondo minimalista, SIN texto, SIN logos",
+            "caption": "Este San Valentín, regala y disfruta un café que enamora en Cafetería Nube.",
+            "status": "pending",
+            "asset_type": "image",
+            "aspect_ratio": "1:1",
+            "duracion_sec": "",
+            "script_video": "",
+            "step": "plan",
+            "created_at": "2026-02-19T10:30:43.016-05:00",
+            "updated_at": "2026-02-19T10:30:43.016-05:00"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "id": "NUBE-20260210-post-02",
+          "updates": {
+            "fecha_objetivo": "2026-02-10",
+            "tipo": "post",
+            "objetivo": "promocionar café de temporada",
+            "titulo": "La magia del café artesanal",
+            "idea": "Destacar el proceso artesanal de nuestros cafés de temporada, mostrando de dónde provienen los granos y el cuidado que ponemos en cada taza.",
+            "tono": "cálido, cercano",
+            "estilo_visual": "lifestyle, luz natural",
+            "prompt_imagen": "fotografía lifestyle, luz natural suave, composición centrada, colores cálidos y terrosos, fondo minimalista, SIN texto, SIN logos",
+            "caption": "Descubre la magia que hay detrás de cada taza de nuestro café artesanal. ☕✨",
+            "status": "pending",
+            "asset_type": "image",
+            "aspect_ratio": "1:1",
+            "duracion_sec": "",
+            "script_video": "",
+            "step": "plan",
+            "created_at": "2026-02-19T10:30:43.017-05:00",
+            "updated_at": "2026-02-19T10:30:43.017-05:00"
+          }
+        },
+        "pairedItem": {
+          "item": 1
+        }
+      },
+      {
+        "json": {
+          "id": "NUBE-20260211-post-03",
+          "updates": {
+            "fecha_objetivo": "2026-02-11",
+            "tipo": "post",
+            "objetivo": "promos/eventos",
+            "titulo": "Celebración del sabor con 2x1",
+            "idea": "Promocionar el 2x1 en pan artesanal que acompaña al café de temporada, ideal para compartir con alguien especial.",
+            "tono": "cálido, cercano",
+            "estilo_visual": "lifestyle, luz natural",
+            "prompt_imagen": "fotografía lifestyle, luz natural suave, composición centrada, colores cálidos y terrosos, fondo minimalista, SIN texto, SIN logos",
+            "caption": "Este 11 de febrero ven a disfrutar 2x1 en nuestro delicioso pan artesanal. Ideal para acompañar tu café especial.",
+            "status": "pending",
+            "asset_type": "image",
+            "aspect_ratio": "1:1",
+            "duracion_sec": "",
+            "script_video": "",
+            "step": "plan",
+            "created_at": "2026-02-19T10:30:43.018-05:00",
+            "updated_at": "2026-02-19T10:30:43.018-05:00"
+          }
+        },
+        "pairedItem": {
+          "item": 2
+        }
+      },
+      {
+        "json": {
+          "id": "NUBE-20260210-story-01",
+          "updates": {
+            "fecha_objetivo": "2026-02-10",
+            "tipo": "story",
+            "objetivo": "comunidad",
+            "titulo": "¿Ya conoces nuestro café de temporada?",
+            "idea": "Invitar a la comunidad a probar el nuevo café de temporada en un formato visual atractivo.",
+            "tono": "cálido, cercano",
+            "estilo_visual": "lifestyle, luz natural",
+            "prompt_imagen": "fotografía lifestyle, luz natural suave, composición centrada, colores cálidos y terrosos, fondo minimalista, SIN texto, SIN logos",
+            "caption": "Descubre nuestro nuevo café de temporada, ¡te esperamos!",
+            "status": "pending",
+            "asset_type": "image",
+            "aspect_ratio": "9:16",
+            "duracion_sec": "",
+            "script_video": "",
+            "step": "plan",
+            "created_at": "2026-02-19T10:30:43.019-05:00",
+            "updated_at": "2026-02-19T10:30:43.019-05:00"
+          }
+        },
+        "pairedItem": {
+          "item": 3
+        }
+      },
+      {
+        "json": {
+          "id": "NUBE-20260211-story-02",
+          "updates": {
+            "fecha_objetivo": "2026-02-11",
+            "tipo": "story",
+            "objetivo": "comunidad",
+            "titulo": "Momentos de café con amigos",
+            "idea": "Compartir una imagen que muestre a amigos disfrutando de café y pan artesanal en la cafetería, resaltando la experiencia comunitaria.",
+            "tono": "cálido, cercano",
+            "estilo_visual": "lifestyle, luz natural",
+            "prompt_imagen": "fotografía lifestyle, luz natural suave, composición centrada, colores cálidos y terrosos, fondo minimalista, SIN texto, SIN logos",
+            "caption": "Momentos que valen la pena, solo aquí en Cafetería Nube.",
+            "status": "pending",
+            "asset_type": "image",
+            "aspect_ratio": "9:16",
+            "duracion_sec": "",
+            "script_video": "",
+            "step": "plan",
+            "created_at": "2026-02-19T10:30:43.019-05:00",
+            "updated_at": "2026-02-19T10:30:43.019-05:00"
+          }
+        },
+        "pairedItem": {
+          "item": 4
+        }
+      },
+      {
+        "json": {
+          "id": "NUBE-20260214-reel-01",
+          "updates": {
+            "fecha_objetivo": "2026-02-14",
+            "tipo": "reel",
+            "objetivo": "promos/eventos",
+            "titulo": "Un San Valentín lleno de amor y café",
+            "idea": "Mostrar cómo Cafetería Nube se convierte en el lugar ideal para celebrar el amor este 14 de febrero.",
+            "tono": "cálido, cercano",
+            "estilo_visual": "lifestyle, luz natural",
+            "prompt_imagen": "",
+            "caption": "",
+            "status": "pending",
+            "asset_type": "video",
+            "aspect_ratio": "9:16",
+            "duracion_sec": "",
+            "script_video": "Este 14 de febrero celebra el amor en Cafetería Nube. Te esperamos con café artesanal y un ambiente perfecto para tu cita especial.",
+            "step": "plan",
+            "created_at": "2026-02-19T10:30:43.020-05:00",
+            "updated_at": "2026-02-19T10:30:43.020-05:00"
+          }
+        },
+        "pairedItem": {
+          "item": 5
+        }
+      },
+      {
+        "json": {
+          "id": "NUBE-20260214-reel-02",
+          "updates": {
+            "fecha_objetivo": "2026-02-14",
+            "tipo": "reel",
+            "objetivo": "promos/eventos",
+            "titulo": "Café y pan artesanal en San Valentín",
+            "idea": "Presentar una rápida vista de la oferta del 2x1 en pan artesanal y su perfecta combinación con el café.",
+            "tono": "cálido, cercano",
+            "estilo_visual": "lifestyle, luz natural",
+            "prompt_imagen": "",
+            "caption": "",
+            "status": "pending",
+            "asset_type": "video",
+            "aspect_ratio": "9:16",
+            "duracion_sec": "",
+            "script_video": "Este 14 de febrero ven a Cafetería Nube y disfruta de nuestro 2x1 en pan artesanal. Un detalle perfecto para compartir con esa persona especial.",
+            "step": "plan",
+            "created_at": "2026-02-19T10:30:43.020-05:00",
+            "updated_at": "2026-02-19T10:30:43.020-05:00"
+          }
+        },
+        "pairedItem": {
+          "item": 6
+        }
+      }
+    ]
+  },
+  "versionId": "54afc52a-dc5e-4fd2-8e98-caaece893533",
+  "activeVersionId": "54afc52a-dc5e-4fd2-8e98-caaece893533",
+  "versionCounter": 197,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-07T03:26:28.414Z",
+      "createdAt": "2026-02-07T03:26:28.414Z",
+      "role": "workflow:owner",
+      "workflowId": "mRaD5EgTTFLKGo6D0R82h",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-21T09:56:48.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-21",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T10:00:16.540Z",
+    "createdAt": "2026-02-21T10:00:16.540Z",
+    "versionId": "54afc52a-dc5e-4fd2-8e98-caaece893533",
+    "workflowId": "mRaD5EgTTFLKGo6D0R82h",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "id"
+              },
+              {
+                "name": "updates",
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          96,
+          -144
+        ],
+        "id": "023cf76f-500a-4ce0-93df-97dd7847e884",
+        "name": "When Executed by Another Workflow"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEET_ID",
+            "mode": "list",
+            "cachedResultName": "Cafeteria_Nube_v2"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 2134022340,
+            "mode": "list",
+            "cachedResultName": "Ideas"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          320,
+          -144
+        ],
+        "id": "865bf95b-13b9-457f-bc98-932043f1e03e",
+        "name": "Read: Existing Sheet Data",
+        "alwaysOutputData": true,
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const allRows = $('Read: Existing Sheet Data').all();\nconst inputItems = $('When Executed by Another Workflow').all();\nconst now = new Date().toISOString();\n\nreturn inputItems.map(inputItem => {\n  const id = inputItem.json.id;\n  const updates = inputItem.json.updates ?? {};\n\n  if (!id || typeof id !== 'string') {\n    throw new Error('Update Sheet: input.id es requerido y debe ser string');\n  }\n\n  // Buscar fila existente en el Sheet\n  const existingRow = allRows.find(r => r.json.id === id);\n  \n  // Merge: datos existentes + updates nuevos\n  const mergedRow = {\n    ...(existingRow?.json || {}),\n    ...updates,\n    id: id,\n    updated_at: now\n  };\n\n  return { json: mergedRow };\n});\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          752,
+          -144
+        ],
+        "id": "54494347-8e34-420d-a1bb-223dae6c5392",
+        "name": "Code: Merge Existing + Updates"
+      },
+      {
+        "parameters": {
+          "operation": "appendOrUpdate",
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEET_ID",
+            "mode": "list",
+            "cachedResultName": "Cafeteria_Nube_v2"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 2134022340,
+            "mode": "list",
+            "cachedResultName": "Ideas"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "id": "={{ $json.id }}",
+              "fecha_objetivo": "={{ $json.fecha_objetivo }}",
+              "tipo": "={{ $json.tipo }}",
+              "objetivo": "={{ $json.objetivo }}",
+              "titulo": "={{ $json.titulo }}",
+              "idea": "={{ $json.idea }}",
+              "tono": "={{ $json.tono }}",
+              "estilo_visual": "={{ $json.estilo_visual }}",
+              "prompt_imagen": "={{ $json.prompt_imagen }}",
+              "caption": "={{ $json.caption }}",
+              "status": "={{ $json.status }}",
+              "image_url": "={{ $json.image_url }}",
+              "canva_export_url": "={{ $json.canva_export_url }}",
+              "error_message": "={{ $json.error_message }}",
+              "created_at": "={{ $json.created_at }}",
+              "updated_at": "={{ $json.updated_at }}",
+              "asset_type": "={{ $json.asset_type }}",
+              "aspect_ratio": "={{ $json.aspect_ratio }}",
+              "duracion_sec": "={{ $json.duracion_sec }}",
+              "script_video": "={{ $json.script_video }}",
+              "heygen_video_id": "={{ $json.heygen_video_id }}",
+              "heygen_video_url": "={{ $json.heygen_video_url }}",
+              "drive_file_url": "={{ $json.drive_file_url }}",
+              "final_asset_url": "={{ $json.final_asset_url }}",
+              "step": "={{ $json.step }}"
+            },
+            "matchingColumns": [
+              "id"
+            ],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "fecha_objetivo",
+                "displayName": "fecha_objetivo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "tipo",
+                "displayName": "tipo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "objetivo",
+                "displayName": "objetivo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "titulo",
+                "displayName": "titulo",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "idea",
+                "displayName": "idea",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "tono",
+                "displayName": "tono",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "estilo_visual",
+                "displayName": "estilo_visual",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "prompt_imagen",
+                "displayName": "prompt_imagen",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "caption",
+                "displayName": "caption",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "status",
+                "displayName": "status",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "image_url",
+                "displayName": "image_url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "canva_export_url",
+                "displayName": "canva_export_url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "error_message",
+                "displayName": "error_message",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "created_at",
+                "displayName": "created_at",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "updated_at",
+                "displayName": "updated_at",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "asset_type",
+                "displayName": "asset_type",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "aspect_ratio",
+                "displayName": "aspect_ratio",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "duracion_sec",
+                "displayName": "duracion_sec",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "script_video",
+                "displayName": "script_video",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "heygen_video_id",
+                "displayName": "heygen_video_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "heygen_video_url",
+                "displayName": "heygen_video_url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "drive_file_url",
+                "displayName": "drive_file_url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "final_asset_url",
+                "displayName": "final_asset_url",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "step",
+                "displayName": "step",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": true
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {
+            "useAppend": true
+          }
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          976,
+          -144
+        ],
+        "id": "140ccdaf-5e26-4c91-9f40-92da9aed6d70",
+        "name": "Google Sheets: appendOrUpdate",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// CRÍTICO: Devolver toda la data del item original + confirmación de actualización\nconst originalInput = $node[\"When Executed by Another Workflow\"].json;\nconst sheetResult = $input.first().json;\n\n// Merge: data original + updates aplicados + confirmación\nconst output = {\n  ...originalInput,\n  ...originalInput.updates,\n  success: true,\n  sheet_updated: true,\n  updated_at: new Date().toISOString()\n};\n\n// Limpiar el objeto 'updates' anidado para evitar confusión\ndelete output.updates;\n\nreturn { json: output };"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1200,
+          -144
+        ],
+        "id": "f1b21249-4397-49a3-b13f-c1d6ea5ea13f",
+        "name": "Code: Return Full Context"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "f4c0bcd1-5be6-4497-9c61-978759d47144",
+                "leftValue": "={{ $json }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "object",
+                  "operation": "empty",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          528,
+          -144
+        ],
+        "id": "6a0626b5-992f-4953-8073-9c7392977fd7",
+        "name": "If"
+      }
+    ],
+    "connections": {
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Read: Existing Sheet Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read: Existing Sheet Data": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Merge Existing + Updates": {
+        "main": [
+          [
+            {
+              "node": "Google Sheets: appendOrUpdate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Sheets: appendOrUpdate": {
+        "main": [
+          [
+            {
+              "node": "Code: Return Full Context",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Code: Merge Existing + Updates",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Code: Merge Existing + Updates",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Tu Nombre",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-21T10:00:16.583Z",
+        "id": 110,
+        "workflowId": "mRaD5EgTTFLKGo6D0R82h",
+        "versionId": "54afc52a-dc5e-4fd2-8e98-caaece893533",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      },
+      {
+        "createdAt": "2026-02-21T10:00:17.569Z",
+        "id": 111,
+        "workflowId": "mRaD5EgTTFLKGo6D0R82h",
+        "versionId": "54afc52a-dc5e-4fd2-8e98-caaece893533",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      }
+    ]
+  }
+}

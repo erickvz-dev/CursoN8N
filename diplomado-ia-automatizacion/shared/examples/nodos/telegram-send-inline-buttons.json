@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "descripcion": "Nodo Telegram que envía un mensaje con botones inline de aprobación/rechazo",
+    "sprint_origen": "Sprint 05",
+    "uso": "Enviar notificaciones con botones de decisión al gerente/supervisor"
+  },
+  "parameters": {
+    "operation": "sendMessage",
+    "chatId": "={{ $json.chat_id_gerente }}",
+    "text": "📋 *Nuevo gasto por aprobar*\n\n👤 Empleado: {{ $json.empleado }}\n💰 Monto: ${{ $json.monto }}\n📂 Categoría: {{ $json.categoria }}",
+    "additionalFields": {
+      "parse_mode": "Markdown",
+      "reply_markup": {
+        "inline_keyboard": [
+          [
+            { "text": "✅ Aprobar", "callback_data": "aprobar_{{ $json.id }}" },
+            { "text": "❌ Rechazar", "callback_data": "rechazar_{{ $json.id }}" }
+          ]
+        ]
+      }
+    }
+  },
+  "type": "n8n-nodes-base.telegram",
+  "typeVersion": 1.2,
+  "position": [0, 0],
+  "name": "Telegram - Notificar Gerente",
+  "credentials": {
+    "telegramApi": {
+      "id": "TU_CREDENTIAL_ID",
+      "name": "Telegram account"
+    }
+  }
+}

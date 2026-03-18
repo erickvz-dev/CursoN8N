@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "descripcion": "Telegram Trigger configurado para recibir mensajes de texto, fotos y audio",
+    "sprint_origen": "Sprint 05",
+    "uso": "Punto de entrada para bots de Telegram que procesan mensajes"
+  },
+  "parameters": {
+    "updates": ["message"]
+  },
+  "type": "n8n-nodes-base.telegramTrigger",
+  "typeVersion": 1.2,
+  "position": [0, 0],
+  "name": "Telegram - Recibir Mensaje",
+  "credentials": {
+    "telegramApi": {
+      "id": "TU_CREDENTIAL_ID",
+      "name": "Telegram account"
+    }
+  }
+}

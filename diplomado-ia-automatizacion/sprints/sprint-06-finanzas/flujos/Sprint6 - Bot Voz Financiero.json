@@ -1,0 +1,472 @@
+{
+  "name": "Sprint6 - Bot Voz Financiero",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "id": "s6-01-trigger",
+      "name": "01 - Telegram Trigger",
+      "webhookId": "sprint6-voz-financiero",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-voice",
+              "leftValue": "={{ $json.message.voice }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [240, 300],
+      "id": "s6-02-if-voz",
+      "name": "02 - IF Es Nota de Voz"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [480, 200],
+      "id": "s6-03-get-file",
+      "name": "03 - Descargar Audio",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [720, 200],
+      "id": "s6-04-whisper",
+      "name": "04 - Whisper Transcribir",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pregunta-voz",
+              "name": "pregunta",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id-voz",
+              "name": "chatId",
+              "value": "={{ $('01 - Telegram Trigger').item.json.message.chat.id }}",
+              "type": "string"
+            },
+            {
+              "id": "user-name-voz",
+              "name": "userName",
+              "value": "={{ $('01 - Telegram Trigger').item.json.message.chat.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 200],
+      "id": "s6-05-normalizar-voz",
+      "name": "05 - Normalizar Voz"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pregunta-texto",
+              "name": "pregunta",
+              "value": "={{ $json.message.text || 'Dame un resumen general de las finanzas' }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id-texto",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "string"
+            },
+            {
+              "id": "user-name-texto",
+              "name": "userName",
+              "value": "={{ $json.message.chat.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 520],
+      "id": "s6-06-normalizar-texto",
+      "name": "06 - Normalizar Texto"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=\uD83D\uDD0D Analizando tus finanzas, un momento...",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1200, 520],
+      "id": "s6-07-feedback",
+      "name": "07 - Feedback Analizando",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT 'gastos' as fuente, categoria, estado as detalle, COUNT(*) as total, SUM(monto)::numeric as suma\nFROM \"Gastos\"\nGROUP BY categoria, estado\nUNION ALL\nSELECT 'transacciones' as fuente, categoria, tipo as detalle, COUNT(*) as total, SUM(monto)::numeric as suma\nFROM \"Transacciones\"\nWHERE fecha >= date_trunc('month', CURRENT_DATE)\nGROUP BY categoria, tipo\nORDER BY fuente, suma DESC;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1200, 300],
+      "id": "s6-08-postgres",
+      "name": "08 - Consultar Finanzas",
+      "credentials": {
+        "postgres": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "BD Gastos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener datos financieros del Postgres UNION\nconst items = $input.all().map(i => i.json);\n\n// Obtener chatId y pregunta del nodo de normalización que se ejecutó\nlet chatId, pregunta, userName;\ntry {\n  const voz = $('05 - Normalizar Voz').first().json;\n  chatId = voz.chatId;\n  pregunta = voz.pregunta;\n  userName = voz.userName;\n} catch (e) {\n  const texto = $('06 - Normalizar Texto').first().json;\n  chatId = texto.chatId;\n  pregunta = texto.pregunta;\n  userName = texto.userName;\n}\n\n// Separar gastos operativos de transacciones bancarias\nconst gastos = items.filter(i => i.fuente === 'gastos');\nconst transacciones = items.filter(i => i.fuente === 'transacciones');\n\n// Calcular totales\nconst ingresos = transacciones\n  .filter(t => t.detalle === 'ingreso')\n  .reduce((sum, t) => sum + parseFloat(t.suma || 0), 0);\nconst egresos = transacciones\n  .filter(t => t.detalle === 'egreso')\n  .reduce((sum, t) => sum + parseFloat(t.suma || 0), 0);\nconst totalGastosOp = gastos\n  .reduce((sum, g) => sum + parseFloat(g.suma || 0), 0);\n\nreturn [{\n  json: {\n    chatId: chatId.toString(),\n    pregunta,\n    userName,\n    datos: JSON.stringify({\n      transacciones_bancarias: transacciones,\n      gastos_operativos: gastos,\n      resumen: {\n        ingresos_mes: ingresos,\n        egresos_bancarios: egresos,\n        gastos_operativos: totalGastosOp,\n        balance_neto: ingresos - egresos\n      }\n    }, null, 2)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 300],
+      "id": "s6-09-consolidar",
+      "name": "09 - Consolidar Datos"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres el director financiero de \"Cafetería Nube\", un restaurante-cafetería.\n{{ $json.userName }} te preguntó: \"{{ $json.pregunta }}\"\n\nDatos financieros del mes:\n{{ $json.datos }}\n\nRedacta un resumen ejecutivo CONVERSACIONAL de MÁXIMO 500 palabras.\n\nReglas estrictas:\n- Habla en primera persona plural (\"cerramos\", \"tuvimos\", \"nuestro\")\n- NO uses bullets, listas, asteriscos ni formato. Solo párrafos fluidos.\n- NO uses números de referencia ni IDs internos.\n- Redondea montos a cifras cerradas (\"cerca de cuarenta y ocho mil pesos\" en vez de \"$48,500.00\")\n- El texto será convertido a audio, así que hazlo natural para ESCUCHAR, no para leer.\n- Responde DIRECTAMENTE a lo que preguntó el dueño.\n- Termina con una recomendación breve y accionable.\n- IMPORTANTE: Tu respuesta NO debe exceder 2,500 caracteres."
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [1680, 300],
+      "id": "s6-10-llm-chain",
+      "name": "10 - Generar Resumen"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [1760, 520],
+      "id": "s6-10a-gpt",
+      "name": "GPT-4o-mini",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "generate",
+        "model": "gpt-4o-mini-tts",
+        "input": "={{ $json.text }}",
+        "voice": "alloy",
+        "options": {
+          "responseFormat": "opus"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [1920, 300],
+      "id": "s6-11-tts",
+      "name": "11 - Generar Audio TTS",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot{TU_BOT_TOKEN}/sendVoice",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $('09 - Consolidar Datos').item.json.chatId }}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "voice",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2160, 300],
+      "id": "s6-12-send-voice",
+      "name": "12 - Enviar Nota de Voz"
+    },
+    {
+      "parameters": {
+        "content": "## \uD83C\uDF99\uFE0F Recepción de Mensaje\nRecibe nota de voz o texto.\nSi es voz: descarga audio → Whisper transcribe.\nSi es texto: usa directamente como pregunta.\nAmbos caminos normalizan a {pregunta, chatId, userName}.",
+        "height": 380,
+        "width": 1160,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, 60],
+      "id": "s6-nota-1",
+      "name": "Nota - Recepción"
+    },
+    {
+      "parameters": {
+        "content": "## \uD83D\uDCCA Procesamiento Financiero\nConsulta UNION de tablas Gastos (Sprint 5) + Transacciones (Sprint 6).\nConsolida en un solo JSON.\nLLM genera resumen conversacional para audio (máx 2500 chars).",
+        "height": 260,
+        "width": 740,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1160, 60],
+      "id": "s6-nota-2",
+      "name": "Nota - Procesamiento"
+    },
+    {
+      "parameters": {
+        "content": "## \uD83D\uDD0A Generación de Audio\nOpenAI TTS (gpt-4o-mini-tts) convierte el resumen a voz.\nFormato opus (compatible con Telegram sendVoice).\nHTTP Request envía la nota de voz al usuario.",
+        "height": 260,
+        "width": 520,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1880, 60],
+      "id": "s6-nota-3",
+      "name": "Nota - Audio"
+    }
+  ],
+  "connections": {
+    "01 - Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "02 - IF Es Nota de Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - IF Es Nota de Voz": {
+      "main": [
+        [
+          {
+            "node": "03 - Descargar Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "06 - Normalizar Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - Descargar Audio": {
+      "main": [
+        [
+          {
+            "node": "04 - Whisper Transcribir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 - Whisper Transcribir": {
+      "main": [
+        [
+          {
+            "node": "05 - Normalizar Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 - Normalizar Voz": {
+      "main": [
+        [
+          {
+            "node": "07 - Feedback Analizando",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "08 - Consultar Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 - Normalizar Texto": {
+      "main": [
+        [
+          {
+            "node": "07 - Feedback Analizando",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "08 - Consultar Finanzas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "08 - Consultar Finanzas": {
+      "main": [
+        [
+          {
+            "node": "09 - Consolidar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09 - Consolidar Datos": {
+      "main": [
+        [
+          {
+            "node": "10 - Generar Resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 - Generar Resumen": {
+      "main": [
+        [
+          {
+            "node": "11 - Generar Audio TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 - Generar Audio TTS": {
+      "main": [
+        [
+          {
+            "node": "12 - Enviar Nota de Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "10 - Generar Resumen",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "sprint6-cafe-el-molino"
+  }
+}

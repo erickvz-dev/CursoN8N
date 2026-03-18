@@ -1,0 +1,617 @@
+{
+  "name": "Sprint4 - Analista de Candidatos",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Sprint4 - Analista de Candidatos",
+        "formDescription": "Sube tu CV para ser evaluado automáticamente por nuestro sistema de IA.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nombre Completo",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "CV (PDF)",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "84281fe1-8014-438b-97b7-d57ad1a9bd98",
+      "name": "n8n Form Trigger",
+      "position": [-784, 32],
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "webhookId": "e6313185-68be-415e-9cde-bcce9490c239"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "CV (PDF)",
+        "options": {}
+      },
+      "id": "cc370de1-74aa-41cb-85fb-70d2fdcfe228",
+      "name": "Extract from File",
+      "position": [-560, 32],
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "Eres un analista de talento senior. Evalúa el siguiente CV para un rol junior de tecnología. Considera experiencia laboral, formación académica, habilidades técnicas y proyectos relevantes. Responde SOLO con un número entero del 0 al 100 (sin texto adicional, sin explicación, solo el número)."
+            },
+            {
+              "content": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        },
+        "requestOptions": {}
+      },
+      "id": "564f632f-9987-42d1-86c0-d608178e7b64",
+      "name": "OpenAI - Análisis CV",
+      "position": [-336, 32],
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.1,
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "TU_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "Sistema RH",
+          "cachedResultUrl": "https://airtable.com/TU_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "TU_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Candidatos",
+          "cachedResultUrl": "https://airtable.com/TU_BASE_ID/TU_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre": "={{ $('n8n Form Trigger').item.json['Nombre Completo'] }}",
+            "CV_Texto": "={{ $('Extract from File').item.json.text }}",
+            "Score": "={{ parseInt($json.message.content.trim(), 10) || 0 }}",
+            "Estado": "Nuevo",
+            "Email": "={{ $('n8n Form Trigger').item.json['Email'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "CV_Texto",
+              "displayName": "CV_Texto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                { "name": "Nuevo", "value": "Nuevo" },
+                { "name": "Entrevista", "value": "Entrevista" },
+                { "name": "Rechazado", "value": "Rechazado" },
+                { "name": "Aceptado", "value": "Aceptado" }
+              ],
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "89356323-365e-41fd-9dda-784e81756738",
+      "name": "Airtable - Guardar Candidato",
+      "position": [-128, 32],
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.fields.Score }}",
+              "operation": "largerEqual",
+              "value2": 75
+            }
+          ]
+        }
+      },
+      "id": "f72bffb8-d909-4975-ae7f-44410b45dc62",
+      "name": "IF Score >= 75",
+      "position": [112, 32],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "start": "={{ $now.plus(2, 'days').toISO() }}",
+        "end": "={{ $now.plus(2, 'days').plus(30, 'minutes').toISO() }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $('n8n Form Trigger').item.json['Email'] }}"
+          ],
+          "description": "Entrevista con candidato evaluado por el sistema de screening automático.",
+          "summary": "={{ 'Entrevista - ' + $('n8n Form Trigger').item.json['Nombre Completo'] }}"
+        }
+      },
+      "id": "9ef7f8e4-404c-459c-8e5c-8e0a8acb99e3",
+      "name": "Google Calendar - Crear Entrevista",
+      "position": [320, -176],
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('n8n Form Trigger').item.json['Email'] }}",
+        "subject": "¡Felicidades! Has sido seleccionado para entrevista",
+        "emailType": "text",
+        "message": "={{ 'Hola ' + $('n8n Form Trigger').item.json['Nombre Completo'] + ',\\n\\nGracias por postularte. Hemos revisado tu CV y nos complace informarte que has avanzado a la etapa de entrevistas.\\n\\nHemos agendado una entrevista para los próximos días. Revisa tu calendario para confirmar la fecha y hora.\\n\\nSi tienes alguna pregunta, no dudes en responder a este correo.\\n\\nSaludos cordiales,\\nEquipo de Recursos Humanos' }}",
+        "options": {}
+      },
+      "id": "a08e7c6d-e67f-40e2-b3a4-2b57dc00fd83",
+      "name": "Gmail - Enviar Invitación",
+      "position": [544, -176],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "webhookId": "f95ae2ee-985f-4761-a7fe-ddcbe1779a08",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "TU_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "Sistema RH",
+          "cachedResultUrl": "https://airtable.com/TU_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "TU_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Candidatos",
+          "cachedResultUrl": "https://airtable.com/TU_BASE_ID/TU_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": ["id"],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "CV_Texto",
+              "displayName": "CV_Texto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                { "name": "Nuevo", "value": "Nuevo" },
+                { "name": "Entrevista", "value": "Entrevista" },
+                { "name": "Rechazado", "value": "Rechazado" },
+                { "name": "Aceptado", "value": "Aceptado" }
+              ],
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "6e8f73cf-575c-4208-a269-43b7eccb0284",
+      "name": "Airtable - Update Invitado",
+      "position": [768, -176],
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Airtable account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('n8n Form Trigger').item.json['Email'] }}",
+        "subject": "Actualización sobre tu postulación",
+        "emailType": "text",
+        "message": "={{ 'Hola ' + $('n8n Form Trigger').item.json['Nombre Completo'] + ',\\n\\nGracias por tu interés en nuestra empresa y por tomarte el tiempo de enviarnos tu CV.\\n\\nDespués de una revisión cuidadosa, hemos decidido no avanzar con tu candidatura en esta ocasión. Esto no refleja tu valor profesional, sino que buscamos un perfil con características muy específicas para esta posición.\\n\\nTe animamos a seguir postulándote a futuras oportunidades.\\n\\nTe deseamos mucho éxito,\\nEquipo de Recursos Humanos' }}",
+        "options": {}
+      },
+      "id": "34d31be0-5cf3-448e-9f18-5bd7d3336d99",
+      "name": "Gmail - Enviar Rechazo",
+      "position": [320, 224],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "webhookId": "37d72fbf-3190-4162-9cac-9a4990000552",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "TU_BASE_ID",
+          "mode": "list",
+          "cachedResultName": "Sistema RH",
+          "cachedResultUrl": "https://airtable.com/TU_BASE_ID"
+        },
+        "table": {
+          "__rl": true,
+          "value": "TU_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Candidatos",
+          "cachedResultUrl": "https://airtable.com/TU_BASE_ID/TU_TABLE_ID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "Rechazado"
+          },
+          "matchingColumns": ["id"],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "CV_Texto",
+              "displayName": "CV_Texto",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score",
+              "displayName": "Score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Estado",
+              "displayName": "Estado",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                { "name": "Nuevo", "value": "Nuevo" },
+                { "name": "Entrevista", "value": "Entrevista" },
+                { "name": "Rechazado", "value": "Rechazado" },
+                { "name": "Aceptado", "value": "Aceptado" }
+              ],
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "6c897886-cbae-45ad-940c-c81a88e67c91",
+      "name": "Airtable - Update Rechazado",
+      "position": [544, 224],
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Airtable account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "n8n Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Análisis CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Análisis CV": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Guardar Candidato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable - Guardar Candidato": {
+      "main": [
+        [
+          {
+            "node": "IF Score >= 75",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Score >= 75": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Crear Entrevista",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail - Enviar Rechazo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Crear Entrevista": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Enviar Invitación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Enviar Invitación": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Update Invitado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Enviar Rechazo": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Update Rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "TU_INSTANCE_ID"
+  },
+  "tags": []
+}

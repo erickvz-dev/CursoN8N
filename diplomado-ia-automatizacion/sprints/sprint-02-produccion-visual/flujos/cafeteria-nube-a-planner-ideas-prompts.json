@@ -1,0 +1,504 @@
+{
+  "name": "Cafetería Nube - A) Planner: Ideas + Prompts",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Semana 3 — Planeación semanal → 7 ideas → Google Sheets\n\n**Objetivo:** generar automáticamente 7 piezas (post/story) para la semana y guardarlas como filas en Google Sheets.\n\n**Secuencia:**\n1) Trigger (manual en clase / schedule en producción)\n2) Brief semanal (promos, audiencia, tono, estilo, objetivo, fechas)\n3) IA devuelve JSON estricto con **exactamente 7** posts\n4) Split Out convierte el array en **7 items**\n5) Google Sheets Append guarda **1 fila por item**\n\n**Salida esperada:** 7 filas nuevas en la hoja **Ideas** con `status = pending`.",
+        "height": 324,
+        "width": 900,
+        "color": 7
+      },
+      "id": "f6b0a983-4a3f-4930-8fb9-00ff0f05371c",
+      "name": "Nota - Mapa del flujo",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Trigger\n\n**Inicio Manual** = modo clase / pruebas.\n\n**Producción:** cambiar por **Schedule Trigger (Cron)**.\nEjemplo: `0 9 * * 1` (lunes 9:00am).\n\nEl trigger solo arranca el flujo; no aporta datos.",
+        "height": 180,
+        "width": 360
+      },
+      "id": "74c3567e-1d30-4dfd-a629-8bd47793fd35",
+      "name": "Nota - Trigger",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Brief semanal (inputs)\n\nAquí defines el contexto que usará la IA.\n\nCampos:\n- `promos_eventos`\n- `audiencia`\n- `tono_marca`\n- `estilo_base`\n- `objetivo_semana`\n- `fechas`\n\n**Clase:** se edita manualmente para ver el impacto.\n**Producción:** traer de Notion/Airtable/Sheet/Form.",
+        "height": 384,
+        "width": 340
+      },
+      "id": "2b40e1df-72db-408d-9b44-f7757c866f54",
+      "name": "Nota - Brief semanal",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## IA — Contrato de salida\n\nEste nodo debe devolver **SOLO JSON válido**.\n\nEstructura esperada:\n```json\n{ \"posts\": [ ... ] }\n```\n\nReglas:\n- `posts` debe contener **EXACTAMENTE 7** objetos.\n- Cada objeto incluye:\n  `fecha_objetivo`, `tipo`, `objetivo`, `titulo`, `idea`, `tono`, `estilo_visual`, `prompt_imagen`, `caption`.\n\nReglas del `prompt_imagen`:\n- incluir **\"sin texto\"**\n- fondo limpio + composición centrada\n- **espacio negativo** para texto en Canva\n- `post` -> 1:1, `story` -> 9:16\n- sin marcas reales\n\nSi falla: revisar que el formato sea `json_object` y que el modelo no agregue texto extra.",
+        "height": 612,
+        "width": 360
+      },
+      "id": "1d3b502a-e9e1-41b7-9e54-427db17bb091",
+      "name": "Nota - Contrato IA",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        752,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Split Out — de 1 JSON a 7 items\n\nConvierte `posts[7]` en **7 items** (1 por pieza).\n\nRuta actual:\n`output[0].content[0].text.posts`\n\nSalida esperada:\n7 items con los campos del post/story.\n\nSi salen 0 items: la ruta cambió; revisar output real del nodo de IA.",
+        "height": 364,
+        "width": 324
+      },
+      "id": "06011bb8-1860-436b-b6d6-322107464324",
+      "name": "Nota - Split Out",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Google Sheets — Persistencia\n\nAcción: **Append** (agrega al final, 1 fila por item).\n\nGuarda:\n- Campos generados por IA\n- `id` generado (`NUBE-YYYYMMDD-TIPO-##`)\n- `status = pending`\n- `created_at` y `updated_at` (ISO)\n- placeholders: `image_url`, `canva_export_url`, `error_message`\n\nRequisitos:\n- headers en fila 1\n- headers deben coincidir con el mapping\n- hoja: **Ideas**\n\nSi falla: credenciales, nombre de hoja y headers.",
+        "height": 400,
+        "width": 560
+      },
+      "id": "7fda9137-8bc2-4a96-b79a-7d7d90a23705",
+      "name": "Nota - Google Sheets",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Qué sigue (Parte 2)\n\nEste flujo solo planea y deja filas `pending`.\n\nSiguiente workflow:\n- leer filas `pending`\n- generar imagen (OpenAI/Gemini)\n- enviar imagen a Canva\n- exportar diseño\n- actualizar fila con:\n  `status`, `image_url`, `canva_export_url`, `updated_at`, `error_message`.",
+        "height": 316,
+        "width": 420,
+        "color": 7
+      },
+      "id": "95255191-3347-464b-aa70-2cefd4103815",
+      "name": "Nota - Qué sigue",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        80
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d8b2750f-1416-4b11-8785-b9dea904b903",
+      "name": "Inicio Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        352,
+        256
+      ],
+      "notes": "TRIGGER: Iniciar workflow manualmente.\nPara producción: usar Schedule Trigger con Cron.\n\nEjemplo Cron: 0 9 * * 1 (Lunes 9am)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5ebcd15f-6387-411e-8ccf-c81942d732c6",
+              "name": "promos_eventos",
+              "value": "Martes 2x1 capuccino; Jueves música en vivo; Sábado pan recién horneado",
+              "type": "string"
+            },
+            {
+              "id": "65871390-e79c-43a8-a76f-59c3e5bec194",
+              "name": "audiencia",
+              "value": "estudiantes y oficinistas cerca",
+              "type": "string"
+            },
+            {
+              "id": "40c17ccc-fdb4-4bf2-a86d-8211a285e696",
+              "name": "tono_marca",
+              "value": "cálido, cercano, con humor ligero",
+              "type": "string"
+            },
+            {
+              "id": "cc8c42e5-0a73-4709-95d3-6a6d31a639a5",
+              "name": "estilo_base",
+              "value": "minimalista, iluminación suave, fondo claro, fotografía tipo lifestyle",
+              "type": "string"
+            },
+            {
+              "id": "8e938d35-6db8-4f50-bd66-06377b24c596",
+              "name": "objetivo_semana",
+              "value": "ventas + comunidad",
+              "type": "string"
+            },
+            {
+              "id": "37f9bd3e-9491-4841-87e5-38e9c4014f1c",
+              "name": "fechas",
+              "value": "2026-01-25 a 2026-01-31",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2c048c06-21ed-4a0b-a85d-7299ed123eee",
+      "name": "Set Brief Semanal",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        576,
+        256
+      ],
+      "notes": "ENTRADA: Ninguna.\nSALIDA: Variables con brief semanal.\n\nPARA CLASE:\nEditar estos valores según el brief de la semana.\n\nPARA PRODUCCIÓN:\nEstos datos pueden venir de Airtable, Notion, form, etc."
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Eres estratega de contenido para Instagram.\nDevuelve únicamente un JSON válido (sin markdown, sin texto adicional, sin comentarios).\n\nEstructura exacta:\n\n{\n  \"posts\": [\n    {\n      \"fecha_objetivo\": \"YYYY-MM-DD\",\n      \"tipo\": \"post|story\",\n      \"objetivo\": \"venta|comunidad|info\",\n      \"titulo\": \"string\",\n      \"idea\": \"string\",\n      \"tono\": \"string\",\n      \"estilo_visual\": \"string\",\n      \"prompt_imagen\": \"string\",\n      \"caption\": \"string\"\n    }\n  ]\n}\n\nRegla: posts debe contener EXACTAMENTE 7 objetos.\n\n\nReglas del prompt_imagen:\n- Debe pedir explícitamente: \"sin texto\" dentro de la imagen.\n- Fondo limpio, composición centrada.\n- Incluir \"espacio negativo\" para poner texto después en Canva.\n- Debe especificar formato: si tipo=\"post\" -> \"1:1\"; si tipo=\"story\" -> \"9:16\".\n- Mantén consistencia visual con estilo_visual.\n- No uses marcas reales ni nombres reales."
+            },
+            {
+              "content": "=Brief semanal (Cafetería Nube):\n- Promos/eventos: {{$json.promos_eventos}}\n- Audiencia: {{$json.audiencia}}\n- Tono de marca: {{$json.tono_marca}}\n- Estilo visual base: {{$json.estilo_base}}\n- Objetivo semanal: {{$json.objetivo_semana}}\n- Fechas sugeridas de esta semana: {{$json.fechas}}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        256
+      ],
+      "id": "19220983-c97b-4ec0-86f5-4cba4765507f",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output[0].content[0].text.posts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        256
+      ],
+      "id": "b5bfaf14-fedf-4baa-b813-99474cfce5d8",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=2134022340"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha_objetivo": "={{ $json.fecha_objetivo }}",
+            "tipo": "={{ $json.tipo }}",
+            "objetivo": "={{ $json.objetivo }}",
+            "titulo": "={{ $json.titulo }}",
+            "idea": "={{ $json.idea }}",
+            "tono": "={{ $json.tono }}",
+            "estilo_visual": "={{ $json.estilo_visual }}",
+            "prompt_imagen": "={{ $json.prompt_imagen }}",
+            "caption": "={{ $json.caption }}",
+            "id": "={{'NUBE-' + $json.fecha_objetivo.replaceAll('-','') + '-' + $json.tipo.toUpperCase() + '-' + String($itemIndex+1).padStart(2,'0')}}",
+            "status": "pending",
+            "created_at": "={{$now.toISO()}}",
+            "updated_at": "={{$now.toISO()}}",
+            "image_url": "\"\"",
+            "canva_export_url": "\"\"",
+            "error_message": "\"\""
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_objetivo",
+              "displayName": "fecha_objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "objetivo",
+              "displayName": "objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "idea",
+              "displayName": "idea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tono",
+              "displayName": "tono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estilo_visual",
+              "displayName": "estilo_visual",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_imagen",
+              "displayName": "prompt_imagen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "canva_export_url",
+              "displayName": "canva_export_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "id": "6c1e75ad-ada5-4873-97ce-591a36ae8e08",
+      "name": "Google Sheets Append",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        1376,
+        256
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "ENTRADA: Items enriquecidos (1 por ejecución del loop).\nSALIDA: Confirmación de append.\n\nCONFIGURACIÓN:\n- Operation: Append or Update\n- useAppend: true (agregar al final)\n- Mapping: automático (mapea todos los campos)\n\nREQUISITOS:\n- Google Sheet debe tener headers en fila 1\n- Headers deben coincidir con campos del JSON\n- Variable de entorno: GOOGLE_SHEET_ID\n\nESTRUCTURA REQUERIDA:\nid | fecha_objetivo | tipo | objetivo | titulo | idea | tono | estilo_visual | prompt_imagen | caption | status | image_url | canva_export_url | error_message | created_at | updated_at"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Inicio Manual": {
+      "main": [
+        [
+          {
+            "node": "Set Brief Semanal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Brief Semanal": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Append",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "ade9757d-240b-46df-a656-07f8f78a1fe7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "Ajxgu0eZDxoBcTpGI3D8k",
+  "tags": []
+}

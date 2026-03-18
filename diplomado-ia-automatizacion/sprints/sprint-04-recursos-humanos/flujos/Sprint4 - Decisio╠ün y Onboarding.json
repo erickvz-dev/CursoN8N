@@ -1,0 +1,323 @@
+{
+  "name": "Sprint4 - Decisión y Onboarding",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Sprint4 - Decisión y Onboarding",
+        "formDescription": "Registra el resultado de la entrevista y la decisión final sobre el candidato.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Feedback Entrevista",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Decisión Final",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  { "option": "CONTRATAR" },
+                  { "option": "RECHAZAR" }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "respondWithData": false
+        }
+      },
+      "id": "node-d1",
+      "name": "n8n Form Trigger",
+      "position": [0, 0],
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "webhookId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "mode": "id",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "mode": "id",
+          "value": "Candidatos"
+        },
+        "filterByFormula": "={{ '{email} = \"' + $json['Email'] + '\"' }}",
+        "limit": 1,
+        "options": {}
+      },
+      "id": "node-d2",
+      "name": "Airtable - Buscar por Email",
+      "position": [220, 0],
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "mode": "id",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "mode": "id",
+          "value": "Candidatos"
+        },
+        "id": "={{ $json.id }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "Entrevistado"
+          }
+        },
+        "options": {}
+      },
+      "id": "node-d3",
+      "name": "Airtable - Marcar Entrevistado",
+      "position": [440, 0],
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('n8n Form Trigger').item.json['Decisión Final'].toString().toUpperCase().trim() }}",
+              "operation": "equals",
+              "value2": "CONTRATAR"
+            }
+          ]
+        }
+      },
+      "id": "node-d4",
+      "name": "IF Decisión = CONTRATAR",
+      "position": [660, 0],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('n8n Form Trigger').item.json['Email'] }}",
+        "subject": "¡Oferta de trabajo! - Bienvenido al equipo",
+        "emailType": "text",
+        "message": "={{ 'Hola ' + $('Airtable - Buscar por Email').item.json.fields.Nombre + ',\\n\\nNos complace informarte que después de tu entrevista, hemos decidido extenderte una oferta formal para unirte a nuestro equipo.\\n\\nEstamos muy impresionados con tu perfil y creemos que serás una excelente adición al equipo.\\n\\nEn los próximos días recibirás los detalles de la oferta y los pasos a seguir para tu incorporación.\\n\\n¡Bienvenido!\\n\\nSaludos cordiales,\\nEquipo de Recursos Humanos' }}",
+        "options": {}
+      },
+      "id": "node-d5",
+      "name": "Gmail - Enviar Oferta",
+      "position": [880, -200],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "mode": "id",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "mode": "id",
+          "value": "Candidatos"
+        },
+        "id": "={{ $('Airtable - Buscar por Email').item.json.id }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "Oferta Enviada"
+          }
+        },
+        "options": {}
+      },
+      "id": "node-d6",
+      "name": "Airtable - Update Oferta Enviada",
+      "position": [1100, -200],
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4o-mini",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "Eres un profesional de Recursos Humanos. Redacta un correo de rechazo amable, empático y profesional para un candidato que fue entrevistado pero no será contratado. El correo debe agradecer su tiempo, reconocer sus cualidades y animarlo a postularse en el futuro. No incluyas el asunto del correo, solo el cuerpo. Usa un tono cálido y humano."
+            },
+            {
+              "content": "={{ 'Nombre del candidato: ' + $('Airtable - Buscar por Email').item.json.fields.Nombre + '\\nFeedback de la entrevista: ' + $('n8n Form Trigger').item.json['Feedback Entrevista'] }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7
+        },
+        "requestOptions": {}
+      },
+      "id": "node-d7",
+      "name": "OpenAI - Redactar Rechazo",
+      "position": [880, 200],
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1.1,
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('n8n Form Trigger').item.json['Email'] }}",
+        "subject": "Actualización sobre tu proceso de selección",
+        "emailType": "text",
+        "message": "={{ $json.message.content }}",
+        "options": {}
+      },
+      "id": "node-d8",
+      "name": "Gmail - Enviar Rechazo",
+      "position": [1100, 200],
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "mode": "id",
+          "value": "YOUR_BASE_ID"
+        },
+        "table": {
+          "mode": "id",
+          "value": "Candidatos"
+        },
+        "id": "={{ $('Airtable - Buscar por Email').item.json.id }}",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estado": "Rechazado"
+          }
+        },
+        "options": {}
+      },
+      "id": "node-d9",
+      "name": "Airtable - Update Rechazado",
+      "position": [1320, 200],
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "n8n Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Buscar por Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable - Buscar por Email": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Marcar Entrevistado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable - Marcar Entrevistado": {
+      "main": [
+        [
+          {
+            "node": "IF Decisión = CONTRATAR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Decisión = CONTRATAR": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Enviar Oferta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OpenAI - Redactar Rechazo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Enviar Oferta": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Update Oferta Enviada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Redactar Rechazo": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Enviar Rechazo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Enviar Rechazo": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Update Rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "meta": {
+    "instanceId": "TU_INSTANCE_ID"
+  },
+  "tags": []
+}

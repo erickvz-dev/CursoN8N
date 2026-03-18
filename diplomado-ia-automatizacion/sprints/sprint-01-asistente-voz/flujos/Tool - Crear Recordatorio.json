@@ -1,0 +1,292 @@
+{
+  "name": "Tool - Crear Recordatorio",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "🧩 Sub-agente: Crear Recordatorio (Tool)\n\nQué hace:\n- Este workflow se ejecuta como *tool* desde el Agente principal.\n- Recibe `titulo`, `fecha` y `hora`.\n- Construye un `dateTime` en ISO (con offset -06:00).\n- Guarda el recordatorio en Google Sheets (hoja: `recordatorios`).\n- Devuelve `resultado` (string) para que el agente lo mande al usuario.\n\nDiseño:\n- Aquí NO se envía nada a Telegram.\n- Esta tool solo persiste el recordatorio (fuente de verdad: Sheets).",
+        "height": 270,
+        "width": 600
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        512
+      ],
+      "id": "8b1ce1c0-7010-4820-8324-6a6876b50a62",
+      "name": "🟨 Nota - Overview"
+    },
+    {
+      "parameters": {
+        "content": "🚪 Trigger del sub-workflow (Tool input)\n\n- Se ejecuta cuando el Agente principal llama esta tool.\n- `jsonExample` describe el payload esperado:\n  - chatId\n  - titulo\n  - fecha (YYYY-MM-DD)\n  - hora (HH:mm)\n\nRegla:\n- El agente debe validar que fecha/hora existan ANTES de llamar esta tool.\n- Si falta algo, el agente debe preguntar primero.",
+        "height": 656,
+        "width": 216
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        128
+      ],
+      "id": "80894a15-cafe-4586-9552-80c3505c2df5",
+      "name": "🟨 Nota - Trigger"
+    },
+    {
+      "parameters": {
+        "content": "🧱 Formatear datos\n\n- Construye `dateTime`:\n  `YYYY-MM-DDTHH:mm:00-06:00`\n- Normaliza `chatId` y `titulo`.\n\nOjo importante:\n- Aquí estás “hardcodeando” el offset -06:00.\n  Si un día cambias de TZ o quieres hacerlo dinámico, conviene usar DateTime con zona horaria.\n\nTip:\n- Si quieres evitar recordatorios vacíos, aquí podrías hacer un trim del título.",
+        "height": 644,
+        "width": 204
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        400,
+        128
+      ],
+      "id": "524cc9b9-ff21-4862-bcef-9cf7d5b338c4",
+      "name": "🟨 Nota - Formatear Datos"
+    },
+    {
+      "parameters": {
+        "content": "💾 Persistencia en Google Sheets (append)\n\n- Operación: `append` agrega una fila nueva al final.\n- Campos guardados:\n  - chatId\n  - title (titulo)\n  - dateTime (ISO)\n  - sent = \"FALSE\" (bandera para el dispatcher)\n  - createdAt (ISO)\n\nEsto prepara el terreno para otro workflow:\n- Un “dispatcher” que corre cada X minutos\n- Busca recordatorios con `sent=FALSE` y `dateTime <= now`\n- Envía el recordatorio y marca `sent=TRUE`.",
+        "height": 642,
+        "width": 234
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        624,
+        128
+      ],
+      "id": "80e90a45-f718-4185-af5a-40274446cb7b",
+      "name": "🟨 Nota - Guardar en Sheets"
+    },
+    {
+      "parameters": {
+        "content": "✅ Respuesta final (texto para el agente)\n\n- Devuelve `resultado` como string para que el agente confirme al usuario.\n\nTip UX:\n- Si quieres consistencia visual, usa siempre el mismo formato:\n  ✅ Recordatorio creado: <titulo> — <fecha> <hora>\n- Si el título es largo, puedes recortarlo en la confirmación.",
+        "height": 636,
+        "width": 200
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        880,
+        128
+      ],
+      "id": "5818b22e-3948-4c7a-820c-78db42077af4",
+      "name": "🟨 Nota - Respuesta"
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"chatId\": 123,\n  \"titulo\": \"string\",\n  \"fecha\": \"YYYY-MM-DD\",\n  \"hora\": \"HH:mm\"\n}"
+      },
+      "id": "896bcf88-5afb-4910-bdc3-a28b148eeb38",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        224,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "format-datetime",
+              "name": "dateTime",
+              "value": "={{ $json.fecha }}T{{ $json.hora }}:00-06:00",
+              "type": "string"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $json.chatId }}",
+              "type": "number"
+            },
+            {
+              "id": "title",
+              "name": "titulo",
+              "value": "={{ $json.titulo }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        608
+      ],
+      "id": "98898cde-7e0c-409f-a51a-7540759c1f37",
+      "name": "Formatear Datos1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "MemoriaAsistenteIA"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1366173978,
+          "mode": "list",
+          "cachedResultName": "recordatorios",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=1366173978"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatId": "={{ $json.chatId }}",
+            "title": "={{ $json.titulo }}",
+            "dateTime": "={{ $json.dateTime }}",
+            "sent": "FALSE",
+            "createdAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dateTime",
+              "displayName": "dateTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sent",
+              "displayName": "sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "createdAt",
+              "displayName": "createdAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        608
+      ],
+      "id": "58f41d3f-d05f-4540-b990-1957711ef45f",
+      "name": "Guardar en Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success-message",
+              "name": "resultado",
+              "value": "=✅ Recordatorio creado: {{ $('Formatear Datos1').item.json.titulo }} para el {{ $('When Executed by Another Workflow').item.json.fecha }} a las {{ $('When Executed by Another Workflow').item.json.hora }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        608
+      ],
+      "id": "e043d619-317c-4925-8848-a7b08b5de542",
+      "name": "Respuesta1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Formatear Datos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear Datos1": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Sheets1": {
+      "main": [
+        [
+          {
+            "node": "Respuesta1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "2b1fae50-f3c1-4ae8-878b-6d73afdb7448",
+  "meta": {
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "W2lQS3mOy8Xdx7hC",
+  "tags": []
+}

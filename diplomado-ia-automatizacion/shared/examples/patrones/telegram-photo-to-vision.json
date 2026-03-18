@@ -1,0 +1,84 @@
+{
+  "_meta": {
+    "descripcion": "Pipeline de procesamiento de fotos: verificar que es foto → descargar → enviar a OpenAI Vision",
+    "sprint_origen": "Sprint 05",
+    "nodos": 3,
+    "uso": "Recibir una foto por Telegram, descargarla y analizarla con IA"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.message.photo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [0, 0],
+      "name": "IF - ¿Tiene Foto?"
+    },
+    {
+      "parameters": {
+        "operation": "getFile",
+        "fileId": "={{ $json.message.photo.pop().file_id }}",
+        "download": true
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [300, 0],
+      "name": "Telegram - Descargar Imagen",
+      "credentials": {
+        "telegramApi": { "id": "TU_CREDENTIAL_ID", "name": "Telegram account" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Analiza esta imagen de un ticket. Extrae los datos y responde ÚNICAMENTE con JSON válido: {\\\"fecha\\\": \\\"DD/MM/YYYY\\\", \\\"monto\\\": 0.00, \\\"categoria\\\": \\\"comida|transporte|materiales|servicios|otro\\\"}\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"data:image/jpeg;base64,{{ $binary.data.data }}\"\n          }\n        }\n      ]\n    }\n  ],\n  \"max_tokens\": 200\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0],
+      "name": "OpenAI - Leer Ticket",
+      "credentials": {
+        "httpHeaderAuth": { "id": "TU_CREDENTIAL_ID", "name": "OpenAI API Key" }
+      }
+    }
+  ],
+  "connections": {
+    "IF - ¿Tiene Foto?": {
+      "main": [
+        [{ "node": "Telegram - Descargar Imagen", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Telegram - Descargar Imagen": {
+      "main": [[{ "node": "OpenAI - Leer Ticket", "type": "main", "index": 0 }]]
+    }
+  }
+}

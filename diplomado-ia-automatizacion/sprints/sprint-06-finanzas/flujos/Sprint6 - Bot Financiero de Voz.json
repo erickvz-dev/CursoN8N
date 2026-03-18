@@ -1,0 +1,576 @@
+{
+    "name":  "Sprint6 - Bot Voz Financiero",
+    "description":  null,
+    "active":  false,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "updates":  [
+                                                         "message"
+                                                     ],
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "type":  "n8n-nodes-base.telegramTrigger",
+                      "typeVersion":  1.2,
+                      "position":  [
+                                       48,
+                                       336
+                                   ],
+                      "id":  "4d2742c5-40ff-4f0f-9545-a71c9ffd57b2",
+                      "name":  "01 - Telegram Trigger",
+                      "webhookId":  "sprint6-voz-financiero",
+                      "credentials":  {
+                                          "telegramApi":  {
+                                                              "id":  "TU_CREDENTIAL_ID",
+                                                              "name":  "Telegram account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "file",
+                                         "fileId":  "={{ $json.message.voice.file_id }}",
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "type":  "n8n-nodes-base.telegram",
+                      "typeVersion":  1.2,
+                      "position":  [
+                                       496,
+                                       144
+                                   ],
+                      "id":  "7640415f-7e56-4e1f-84e4-47b1133e072e",
+                      "name":  "03 - Descargar Audio",
+                      "webhookId":  "e0bd5cdf-089c-426d-aa09-7a02eb203f30",
+                      "credentials":  {
+                                          "telegramApi":  {
+                                                              "id":  "TU_CREDENTIAL_ID",
+                                                              "name":  "Telegram account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "audio",
+                                         "operation":  "transcribe",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.openAi",
+                      "typeVersion":  2,
+                      "position":  [
+                                       720,
+                                       144
+                                   ],
+                      "id":  "6050dade-0b06-4194-b934-e5f9cbacad4e",
+                      "name":  "04 - Whisper Transcribir",
+                      "credentials":  {
+                                          "openAiApi":  {
+                                                            "id":  "TU_CREDENTIAL_ID",
+                                                            "name":  "OpenAi account"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "assignments":  {
+                                                             "assignments":  [
+                                                                                 {
+                                                                                     "id":  "pregunta-voz",
+                                                                                     "name":  "pregunta",
+                                                                                     "value":  "={{ $json.text }}",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "chat-id-voz",
+                                                                                     "name":  "chatId",
+                                                                                     "value":  "={{ $(\u002701 - Telegram Trigger\u0027).item.json.message.chat.id }}",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "user-name-voz",
+                                                                                     "name":  "userName",
+                                                                                     "value":  "={{ $(\u002701 - Telegram Trigger\u0027).item.json.message.chat.first_name }}",
+                                                                                     "type":  "string"
+                                                                                 }
+                                                                             ]
+                                                         },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.set",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       944,
+                                       144
+                                   ],
+                      "id":  "765fd98b-0c22-4453-9129-2b874dcf5249",
+                      "name":  "05 - Normalizar Voz"
+                  },
+                  {
+                      "parameters":  {
+                                         "assignments":  {
+                                                             "assignments":  [
+                                                                                 {
+                                                                                     "id":  "pregunta-texto",
+                                                                                     "name":  "pregunta",
+                                                                                     "value":  "={{ $json.message.text || \u0027Dame un resumen general de las finanzas\u0027 }}",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "chat-id-texto",
+                                                                                     "name":  "chatId",
+                                                                                     "value":  "={{ $json.message.chat.id }}",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "user-name-texto",
+                                                                                     "name":  "userName",
+                                                                                     "value":  "={{ $json.message.chat.first_name }}",
+                                                                                     "type":  "string"
+                                                                                 }
+                                                                             ]
+                                                         },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.set",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       720,
+                                       480
+                                   ],
+                      "id":  "94d20686-d8d7-4c90-85f3-8b772f604109",
+                      "name":  "06 - Normalizar Texto"
+                  },
+                  {
+                      "parameters":  {
+                                         "chatId":  "={{ $json.chatId }}",
+                                         "text":  "=ðŸ” Analizando tus finanzas, un momento...",
+                                         "additionalFields":  {
+
+                                                              }
+                                     },
+                      "type":  "n8n-nodes-base.telegram",
+                      "typeVersion":  1.2,
+                      "position":  [
+                                       1168,
+                                       464
+                                   ],
+                      "id":  "8cc63b58-64e3-4a82-b812-120b7fa6304d",
+                      "name":  "07 - Feedback Analizando",
+                      "webhookId":  "09367693-fde9-4e8d-b15b-a8cc7fa25b80",
+                      "credentials":  {
+                                          "telegramApi":  {
+                                                              "id":  "TU_CREDENTIAL_ID",
+                                                              "name":  "Telegram account"
+                                                          }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "WITH params AS (\n  SELECT \u0027{{ $json.periodo }}\u0027::text AS periodo\n),\nbase_date AS (\n  SELECT GREATEST(\n    COALESCE((SELECT MAX(\"Transacciones\".fecha) FROM \"Transacciones\"), DATE \u00272000-01-01\u0027),\n    COALESCE((SELECT MAX(\"Gastos\".created_at::date) FROM \"Gastos\"), DATE \u00272000-01-01\u0027)\n  ) AS ref_date\n),\nrango AS (\n  SELECT\n    CASE\n      WHEN p.periodo = \u0027semana\u0027 THEN (b.ref_date - INTERVAL \u00276 days\u0027)::date\n      WHEN p.periodo = \u0027mes\u0027 THEN (b.ref_date - INTERVAL \u00271 month\u0027 + INTERVAL \u00271 day\u0027)::date\n      ELSE (b.ref_date - INTERVAL \u00271 year\u0027 + INTERVAL \u00271 day\u0027)::date\n    END AS fecha_inicio,\n    b.ref_date AS fecha_fin\n  FROM params p\n  CROSS JOIN base_date b\n)\n\nSELECT\n  \u0027gastos\u0027 AS fuente,\n  \"Gastos\".categoria,\n  \"Gastos\".estado AS detalle,\n  COUNT(*) AS total,\n  SUM(\"Gastos\".monto)::numeric AS suma\nFROM \"Gastos\"\nCROSS JOIN rango\nWHERE \"Gastos\".created_at::date \u003e= rango.fecha_inicio\n  AND \"Gastos\".created_at::date \u003c= rango.fecha_fin\nGROUP BY \"Gastos\".categoria, \"Gastos\".estado\n\nUNION ALL\n\nSELECT\n  \u0027transacciones\u0027 AS fuente,\n  \"Transacciones\".categoria,\n  \"Transacciones\".tipo AS detalle,\n  COUNT(*) AS total,\n  SUM(\"Transacciones\".monto)::numeric AS suma\nFROM \"Transacciones\"\nCROSS JOIN rango\nWHERE \"Transacciones\".fecha \u003e= rango.fecha_inicio\n  AND \"Transacciones\".fecha \u003c= rango.fecha_fin\nGROUP BY \"Transacciones\".categoria, \"Transacciones\".tipo\n\nORDER BY fuente, suma DESC;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       1168,
+                                       240
+                                   ],
+                      "id":  "9ea3e539-5251-488c-a23b-0c83e06c8c40",
+                      "name":  "08 - Consultar Finanzas",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "TU_CREDENTIAL_ID",
+                                                           "name":  "Unnamed credential"
+                                                       }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "// Obtener datos financieros del Postgres UNION\nconst items = $input.all().map(i =\u003e i.json);\n\n// Obtener chatId y pregunta evadiendo el bug de n8n Proxy al leer nodos inactivos.\n// Validaremos directamente desde el Trigger quÃ© rama fue la que se ejecutÃ³:\nconst triggerMessage = $(\u002701 - Telegram Trigger\u0027).first().json.message;\nconst isVoice = !!triggerMessage.voice;\n\nlet chatId, pregunta, userName;\n\nif (isVoice) {\n  // Si tuvo voz, estamos 100% seguros que la rama 05 se ejecutÃ³ y no arrojarÃ¡ error\n  const voz = $(\u002705 - Normalizar Voz\u0027).first().json;\n  chatId = voz.chatId;\n  pregunta = voz.pregunta;\n  userName = voz.userName;\n} else {\n  // Si no, la de Texto (06) es la que se ejecutÃ³\n  const texto = $(\u002706 - Normalizar Texto\u0027).first().json;\n  chatId = texto.chatId;\n  pregunta = texto.pregunta;\n  userName = texto.userName;\n}\n\n// Separar gastos operativos de transacciones bancarias\nconst gastos = items.filter(i =\u003e i.fuente === \u0027gastos\u0027);\nconst transacciones = items.filter(i =\u003e i.fuente === \u0027transacciones\u0027);\n\n// Calcular totales\nconst ingresos = transacciones\n  .filter(t =\u003e t.detalle === \u0027ingreso\u0027)\n  .reduce((sum, t) =\u003e sum + parseFloat(t.suma || 0), 0);\nconst egresos = transacciones\n  .filter(t =\u003e t.detalle === \u0027egreso\u0027)\n  .reduce((sum, t) =\u003e sum + parseFloat(t.suma || 0), 0);\nconst totalGastosOp = gastos\n  .reduce((sum, g) =\u003e sum + parseFloat(g.suma || 0), 0);\n\nreturn [{\n  json: {\n    chatId: chatId.toString(),\n    pregunta,\n    userName,\n    datos: JSON.stringify({\n      transacciones_bancarias: transacciones,\n      gastos_operativos: gastos,\n      resumen: {\n        ingresos_mes: ingresos,\n        egresos_bancarios: egresos,\n        gastos_operativos: totalGastosOp,\n        balance_neto: ingresos - egresos\n      }\n    }, null, 2)\n  }\n}];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1392,
+                                       240
+                                   ],
+                      "id":  "52eb7e0e-65d3-408c-a0b5-c370b1d14f00",
+                      "name":  "09 - Consolidar Datos"
+                  },
+                  {
+                      "parameters":  {
+                                         "promptType":  "define",
+                                         "text":  "=Eres el director financiero de \"CafÃ© El Molino\", un restaurante-cafeterÃ­a.\n{{ $json.userName }} te preguntÃ³: \"{{ $json.pregunta }}\"\n\nDatos financieros del mes:\n{{ $json.datos }}\n\nRedacta un resumen ejecutivo CONVERSACIONAL de MÃXIMO 500 palabras.\n\nReglas estrictas:\n- Habla en primera persona plural (\"cerramos\", \"tuvimos\", \"nuestro\")\n- NO uses bullets, listas, asteriscos ni formato. Solo pÃ¡rrafos fluidos.\n- NO uses nÃºmeros de referencia ni IDs internos.\n- Redondea montos a cifras cerradas (\"cerca de cuarenta y ocho mil pesos\" en vez de \"$48,500.00\")\n- El texto serÃ¡ convertido a audio, asÃ­ que hazlo natural para ESCUCHAR, no para leer.\n- Responde DIRECTAMENTE a lo que preguntÃ³ el dueÃ±o.\n- Termina con una recomendaciÃ³n breve y accionable.\n- IMPORTANTE: Tu respuesta NO debe exceder 2,500 caracteres."
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.chainLlm",
+                      "typeVersion":  1.4,
+                      "position":  [
+                                       1616,
+                                       240
+                                   ],
+                      "id":  "3966441d-b8a0-49d4-bb16-37e4177ecfbb",
+                      "name":  "10 - Generar Resumen"
+                  },
+                  {
+                      "parameters":  {
+                                         "model":  {
+                                                       "__rl":  true,
+                                                       "value":  "gpt-4o-mini",
+                                                       "mode":  "list",
+                                                       "cachedResultName":  "GPT-4O-MINI"
+                                                   },
+                                         "options":  {
+                                                         "temperature":  0.4
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+                      "typeVersion":  1.2,
+                      "position":  [
+                                       1688,
+                                       464
+                                   ],
+                      "id":  "927f5551-b71e-4867-bae5-fd551a0b2891",
+                      "name":  "GPT-4o-mini",
+                      "credentials":  {
+                                          "openAiApi":  {
+                                                            "id":  "TU_CREDENTIAL_ID",
+                                                            "name":  "OpenAi account"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "resource":  "audio",
+                                         "model":  "gpt-4o-mini-tts",
+                                         "input":  "={{ $json.text }}",
+                                         "voice":  "echo",
+                                         "options":  {
+                                                         "response_format":  "opus"
+                                                     }
+                                     },
+                      "type":  "@n8n/n8n-nodes-langchain.openAi",
+                      "typeVersion":  2,
+                      "position":  [
+                                       1968,
+                                       240
+                                   ],
+                      "id":  "014b88e1-5e2b-4848-9ac5-8ad3becbf002",
+                      "name":  "11 - Generar Audio TTS",
+                      "credentials":  {
+                                          "openAiApi":  {
+                                                            "id":  "TU_CREDENTIAL_ID",
+                                                            "name":  "OpenAi account"
+                                                        }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://api.telegram.org/bot{TU_BOT_TOKEN}/sendVoice",
+                                         "sendBody":  true,
+                                         "contentType":  "multipart-form-data",
+                                         "bodyParameters":  {
+                                                                "parameters":  [
+                                                                                   {
+                                                                                       "name":  "chat_id",
+                                                                                       "value":  "={{ $(\u002709 - Consolidar Datos\u0027).item.json.chatId }}"
+                                                                                   },
+                                                                                   {
+                                                                                       "parameterType":  "formBinaryData",
+                                                                                       "name":  "voice",
+                                                                                       "inputDataFieldName":  "data"
+                                                                                   }
+                                                                               ]
+                                                            },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       2192,
+                                       240
+                                   ],
+                      "id":  "6de237a1-abdb-4704-abb9-e28dfa8620f5",
+                      "name":  "12 - Enviar Nota de Voz"
+                  },
+                  {
+                      "parameters":  {
+                                         "content":  "## ðŸŽ™ï¸ RecepciÃ³n de Mensaje\nRecibe nota de voz o texto.\nSi es voz: descarga audio â†’ Whisper transcribe.\nSi es texto: usa directamente como pregunta.\nAmbos caminos normalizan a {pregunta, chatId, userName}.",
+                                         "height":  684,
+                                         "width":  1160,
+                                         "color":  4
+                                     },
+                      "type":  "n8n-nodes-base.stickyNote",
+                      "typeVersion":  1,
+                      "position":  [
+                                       0,
+                                       -16
+                                   ],
+                      "id":  "944ffcee-865b-4b62-906c-68c16d024574",
+                      "name":  "Nota - RecepciÃ³n"
+                  },
+                  {
+                      "parameters":  {
+                                         "content":  "## ðŸ“Š Procesamiento Financiero\nConsulta UNION de tablas Gastos (Sprint 5) + Transacciones (Sprint 6).\nConsolida en un solo JSON.\nLLM genera resumen conversacional para audio (mÃ¡x 2500 chars).",
+                                         "height":  676,
+                                         "width":  740,
+                                         "color":  6
+                                     },
+                      "type":  "n8n-nodes-base.stickyNote",
+                      "typeVersion":  1,
+                      "position":  [
+                                       1152,
+                                       -16
+                                   ],
+                      "id":  "01bd9212-c826-4b01-87c8-a98251161d5a",
+                      "name":  "Nota - Procesamiento"
+                  },
+                  {
+                      "parameters":  {
+                                         "content":  "## ðŸ”Š GeneraciÃ³n de Audio\nOpenAI TTS (gpt-4o-mini-tts) convierte el resumen a voz.\nFormato opus (compatible con Telegram sendVoice).\nHTTP Request envÃ­a la nota de voz al usuario.",
+                                         "height":  676,
+                                         "width":  520,
+                                         "color":  3
+                                     },
+                      "type":  "n8n-nodes-base.stickyNote",
+                      "typeVersion":  1,
+                      "position":  [
+                                       1888,
+                                       -16
+                                   ],
+                      "id":  "a15702d8-9f89-423b-bbc6-5e8f6d026dd7",
+                      "name":  "Nota - Audio"
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "combinator":  "and",
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "has-voice",
+                                                                                   "leftValue":  "={{ !!$json.message.voice }}",
+                                                                                   "operator":  {
+                                                                                                    "operation":  "true",
+                                                                                                    "singleValue":  true,
+                                                                                                    "type":  "boolean"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "options":  {
+                                                                            "version":  2,
+                                                                            "leftValue":  "",
+                                                                            "caseSensitive":  true,
+                                                                            "typeValidation":  "none"
+                                                                        }
+                                                        },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       272,
+                                       336
+                                   ],
+                      "id":  "16f04940-09a8-47b7-b609-8c17af4dd089",
+                      "name":  "02 - IF Es Nota de Voz1"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const pregunta = $input.first().json.pregunta.toLowerCase();\n\n// Detectar intenciÃ³n temporal\nlet periodo = \u0027anio\u0027;\nif (\n  pregunta.includes(\u0027Ãºltima semana\u0027) ||\n  pregunta.includes(\u0027ultima semana\u0027) ||\n  pregunta.includes(\u0027esta semana\u0027) ||\n  pregunta.includes(\u0027semana pasada\u0027)\n) {\n  periodo = \u0027semana\u0027;\n} else if (\n  pregunta.includes(\u0027Ãºltimo mes\u0027) ||\n  pregunta.includes(\u0027ultimo mes\u0027) ||\n  pregunta.includes(\u0027este mes\u0027) ||\n  pregunta.includes(\u0027mes pasado\u0027)\n) {\n  periodo = \u0027mes\u0027;\n}\n\n// Reglas:\n// - semana =\u003e Ãºltimos 7 dÃ­as\n// - mes =\u003e Ãºltimo mes\n// - default =\u003e Ãºltimo aÃ±o\nreturn [\n  {\n    json: {\n      ...$input.first(),\n      periodo\n    }\n  }\n];"
+                                     },
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       944,
+                                       384
+                                   ],
+                      "id":  "df3b6128-14b0-4a15-af27-17846e4ab16f",
+                      "name":  "Code in JavaScript1"
+                  }
+              ],
+    "connections":  {
+                        "01 - Telegram Trigger":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "02 - IF Es Nota de Voz1",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "03 - Descargar Audio":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "04 - Whisper Transcribir",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "04 - Whisper Transcribir":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "05 - Normalizar Voz",
+                                                                              "type":  "main",
+                                                                              "index":  0
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     },
+                        "05 - Normalizar Voz":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "07 - Feedback Analizando",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     },
+                                                                     {
+                                                                         "node":  "08 - Consultar Finanzas",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "06 - Normalizar Texto":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "07 - Feedback Analizando",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       },
+                                                                       {
+                                                                           "node":  "Code in JavaScript1",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "08 - Consultar Finanzas":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "09 - Consolidar Datos",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "09 - Consolidar Datos":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "10 - Generar Resumen",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "10 - Generar Resumen":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "11 - Generar Audio TTS",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "11 - Generar Audio TTS":  {
+                                                       "main":  [
+                                                                    [
+                                                                        {
+                                                                            "node":  "12 - Enviar Nota de Voz",
+                                                                            "type":  "main",
+                                                                            "index":  0
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                   },
+                        "GPT-4o-mini":  {
+                                            "ai_languageModel":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "10 - Generar Resumen",
+                                                                             "type":  "ai_languageModel",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                        },
+                        "02 - IF Es Nota de Voz1":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "03 - Descargar Audio",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ],
+                                                                     [
+                                                                         {
+                                                                             "node":  "06 - Normalizar Texto",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Code in JavaScript1":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "08 - Consultar Finanzas",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate",
+                     "availableInMCP":  false,
+                     "callerPolicy":  "workflowsFromSameOwner"
+                 },
+    "staticData":  null,
+    "meta":  {
+                 "templateCredsSetupCompleted":  true
+             },
+    "pinData":  {
+
+                },
+    "tags":  [
+
+             ],
+    "activeVersion":  null
+}

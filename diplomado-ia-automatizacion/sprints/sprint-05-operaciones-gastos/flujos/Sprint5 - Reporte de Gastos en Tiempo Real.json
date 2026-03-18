@@ -1,0 +1,304 @@
+{
+  "name": "Sprint5 - Reporte de Gastos en Tiempo Real",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "reporte-gastos",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "83e7a6b5-0c44-4b05-93fd-f78c0b18ce1e",
+      "name": "Webhook - Entrada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        752,
+        576
+      ],
+      "webhookId": "d1a3f920-7e11-4b6a-a5d2-3f9c72e18001"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM \"Gastos\";",
+        "options": {}
+      },
+      "id": "172cd546-b5a5-43c1-8160-406588c1c1fd",
+      "name": "Supabase - Leer Gastos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        976,
+        576
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "btpuoO30ePtQTuXg",
+          "name": "BD Gastos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all().map(item => item.json);\nreturn [{\n  json: {\n    gastos: JSON.stringify(allItems, null, 2),\n    total_registros: allItems.length\n  }\n}];"
+      },
+      "id": "c4127722-4868-4e42-a2bb-7e5ba8632cb0",
+      "name": "Consolidar Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres un director financiero senior. Tu ÚNICA respuesta debe ser código HTML puro. PROHIBIDO usar markdown, backticks o texto fuera del HTML. El primer carácter debe ser < y el último >.\n\nDatos: {{ $json.total_registros }} registros de gastos:\n{{ $json.gastos }}\n\nGenera un reporte HTML COMPLETO con TODAS estas 8 secciones obligatorias:\n1. HEADER: Barra superior con emoji 📊 como logo, nombre \"Mi Empresa\", fecha del reporte.\n2. KPIs EN TARJETAS: Total gastado, número de transacciones, ticket promedio, porcentaje aprobado — cada uno en una tarjeta con icono, valor grande y etiqueta.\n3. DESGLOSE POR CATEGORÍA: Barras horizontales con colores distintos mostrando porcentaje y monto de cada categoría.\n4. TOP 3 EMPLEADOS: Tabla con ranking, nombre, monto total y número de gastos.\n5. ESTADO DE GASTOS: Indicadores visuales (Aprobado=verde, Pendiente=amarillo, Rechazado=rojo) con conteo y monto por estado.\n6. TABLA DETALLADA: Todos los gastos con columnas: ID, Fecha, Empleado, Monto, Categoría, Estado. Zebra striping y badges de color para el estado.\n7. RECOMENDACIONES: Máximo 2 recomendaciones breves basadas en los datos.\n8. FOOTER: \"Reporte generado automáticamente · Sprint 5 · Datos en tiempo real desde Supabase\".\n\nDISEÑO:\n- Colores: primario #1a56db (azul), secundario #059669 (verde), acento #dc2626 (rojo), warning #d97706 (amarillo), fondo #f8fafc, texto #1e293b.\n- Font: 'Segoe UI', system-ui, sans-serif.\n- Tarjetas: border-radius 12px, box-shadow 0 1px 3px rgba(0,0,0,0.1).\n- Layout: max-width 900px centrado, responsive con meta viewport.\n- Tabla: bordes sutiles, header azul con texto blanco.\n- Badges estado: border-radius 20px, padding 4px 12px.\n\nSi falta alguna sección, el reporte está INCOMPLETO. Responde SOLO con <!DOCTYPE html>...</html>."
+      },
+      "id": "4e857d1d-4958-41cf-9dcd-abd7573cbee5",
+      "name": "OpenAI - Generar Reporte",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        1424,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "7d557126-caee-4b17-a815-d2b5bb6ee1bf",
+      "name": "GPT-4o-mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1504,
+        800
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "SNcq9lmxwYGcZb6e",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "id": "45c89361-aad6-46fd-89f8-a6fbf9a373a0",
+      "name": "Responder al Navegador",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let text = $input.first().json.text || '';\n\n// Extraer HTML si viene envuelto en markdown ```html ... ```\nconst match = text.match(/```html?\\s*([\\s\\S]*?)```/);\nif (match) {\n  text = match[1].trim();\n}\n\n// Si aún tiene texto antes del <!DOCTYPE, cortarlo\nconst docIndex = text.indexOf('<!DOCTYPE');\nif (docIndex > 0) {\n  text = text.substring(docIndex);\n}\n\n// Si tiene texto después de </html>, cortarlo\nconst htmlEnd = text.lastIndexOf('</html>');\nif (htmlEnd !== -1) {\n  text = text.substring(0, htmlEnd + 7);\n}\n\nreturn [{ json: { html: text } }];"
+      },
+      "id": "24be111f-549b-41f5-af65-22da1619728a",
+      "name": "Limpiar HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3b. LIMPIAR\nExtrae solo el HTML puro si el modelo agrega markdown o texto extra.",
+        "height": 120,
+        "width": 260
+      },
+      "id": "75119531-8341-45cd-a6d6-d27144699db9",
+      "name": "Nota - Limpiar",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1888,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 1. ENTRADA\nCualquier persona con este enlace puede solicitar el reporte.\nActiva el flujo en tiempo real.",
+        "height": 120,
+        "width": 260
+      },
+      "id": "527b794b-d752-4e85-8398-59954675e14e",
+      "name": "Nota - Webhook1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        592,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. CONSULTA DB\nLee todos los gastos de Supabase en el momento en que alguien abre el enlace.",
+        "height": 120,
+        "width": 260
+      },
+      "id": "fbb3d83e-6dc0-47d0-a0ab-750dff47ec64",
+      "name": "Nota - Postgres1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        912,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2b. CONSOLIDAR\nAgrupa todas las filas en un solo JSON para enviar al modelo de IA como contexto completo.",
+        "height": 120,
+        "width": 260
+      },
+      "id": "4729aa44-d726-42d1-9dd3-aa3bb0b2ba4a",
+      "name": "Nota - Consolidar1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. ANÁLISIS IA\nConvierte los datos crudos en un reporte financiero legible en formato HTML.",
+        "height": 120,
+        "width": 260
+      },
+      "id": "38423d98-61ca-4259-a9bf-4ef9c94b39ab",
+      "name": "Nota - OpenAI1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 4. SALIDA\nEnvía el HTML como página web. El navegador lo renderiza como reporte final.\nHeader: Content-Type: text/html",
+        "height": 120,
+        "width": 260
+      },
+      "id": "e313e3f9-decb-4191-9b91-128da194de26",
+      "name": "Nota - Responder1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        336
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Entrada": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Leer Gastos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Leer Gastos": {
+      "main": [
+        [
+          {
+            "node": "Consolidar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidar Datos": {
+      "main": [
+        [
+          {
+            "node": "OpenAI - Generar Reporte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI - Generar Reporte": {
+      "main": [
+        [
+          {
+            "node": "Limpiar HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "OpenAI - Generar Reporte",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpiar HTML": {
+      "main": [
+        [
+          {
+            "node": "Responder al Navegador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7295417e-3d9b-4adf-9a78-c614391f93d2",
+  "meta": {
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "0y9HPSK7ttHtLluhJTekt",
+  "tags": []
+}

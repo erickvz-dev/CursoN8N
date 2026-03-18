@@ -1,0 +1,411 @@
+{
+  "name": "WF-07-Whisper comandos inteligentes",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1504,
+        16
+      ],
+      "id": "62feeca5-fc43-4785-95a0-407831a53949",
+      "name": "Telegram Trigger",
+      "webhookId": "7b2c2363-2d93-418c-8d8e-28cdba2e9d58",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1280,
+        16
+      ],
+      "id": "4f36ce72-5249-4805-9999-809e333a167c",
+      "name": "Get a file",
+      "webhookId": "de07df3a-c617-4ff7-9959-34afa98be24c",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        16
+      ],
+      "id": "f6de37d5-540a-4923-ac75-14e06ad20000",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -32,
+        16
+      ],
+      "id": "f7fa1a56-f953-484a-b610-45038eccd209",
+      "name": "Send a text message",
+      "webhookId": "8564ab00-8261-4275-8fc5-278d99712184",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Eres un traductor de comandos de voz hablando en español. El usuario habla normal por telegram y tu trabajo es convertir lo que diga en formato JSON bien formateado.\n\n{\n  \"tipo\": \"recordatorio\",\n  \"texto\": \"pagar la luz\",\n  \"fecha\": \"2025-12-02\",\n  \"hora\": \"20:00\"\n}\n\nSi es algo que el usuario quiere guardar para después utiliza tipo:\"nota\"\nSi quiere que le recuerden algo en cierto momento, usa tipo:\"recordatorio\"\nSi parece una reunión o algo con fecha/hora, usa tipo:\"evento\".\n\nTodas las acciones son futuras. Considera la fecha actual: {{ $now }}\nSi no encuentras una fecha u hora ponle null.\nResponde solo el JSON sin comentarios, sin texto extra "
+            },
+            {
+              "content": "={{ $json.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        16
+      ],
+      "id": "e3a0ce37-3a3d-4c5e-973c-9cc87729784a",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "729809b0-5e17-4c96-8269-588f2c55ac6b",
+              "name": "message",
+              "value": "=✅ Listo, te dejo este recordatorio:  {{ $('Message a model').item.json.output[0].content[0].text.texto }} Fecha: {{ $('Message a model').item.json.output[0].content[0].text.fecha }} Hora: {{ $('Message a model').item.json.output[0].content[0].text.hora }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -256,
+        16
+      ],
+      "id": "042c3fdd-aa05-4b1d-987f-4795e48e1ddc",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "82acf1a2-5c1b-42c6-b0b0-50c37690135c",
+              "name": "message",
+              "value": "=📅 Esto suena a evento:  {{ $('Message a model').item.json.output[0].content[0].text.texto }} Fecha: {{ $('Message a model').item.json.output[0].content[0].text.fecha }} Hora: {{ $('Message a model').item.json.output[0].content[0].text.hora }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -256,
+        208
+      ],
+      "id": "5c833815-4403-4f34-ac00-079101cbc503",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output[0].content[0].text.tipo }}",
+                    "rightValue": "nota",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c693fcc1-050b-4b88-b415-450e3e05afd0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "nota"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "83e3a582-ac95-40f5-a459-fd325c9c9247",
+                    "leftValue": "={{ $json.output[0].content[0].text.tipo }}",
+                    "rightValue": "recordatorio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "recordatorio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9fbdd0c9-f630-4c55-ba92-0d3472eff6e5",
+                    "leftValue": "={{ $json.output[0].content[0].text.tipo }}",
+                    "rightValue": "evento",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "evento"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -480,
+        0
+      ],
+      "id": "ac8fea01-15a6-4f24-8025-a28a2d50c8e0",
+      "name": "Decisiones"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c4bd33de-ca2d-4813-a852-66d79c108be4",
+              "name": "message",
+              "value": "=📝 Anotado como nota:  {{ $('Message a model').item.json.output[0].content[0].text.texto }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -256,
+        -176
+      ],
+      "id": "4fa6db4d-c31e-46e7-aef4-727335435f37",
+      "name": "Mensaje para notas"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Decisiones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decisiones": {
+      "main": [
+        [
+          {
+            "node": "Mensaje para notas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje para notas": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "c055f78f-4cef-4616-9183-beffdb0ee655",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "wg2fwneVd9-gmOih_3lRF",
+  "tags": []
+}

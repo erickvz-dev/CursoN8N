@@ -1,0 +1,278 @@
+{
+  "name": "Tool - Crear Evento",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "🧩 Sub-agente: Crear Evento (Tool)\n\nQué hace:\n- Este workflow se ejecuta como *tool* desde el Agente principal.\n- Recibe `titulo`, `fecha`, `hora` y `duracion_minutos` (opcional).\n- Construye start/end en ISO y crea un evento en Google Calendar.\n- Devuelve `resultado` (string) para que el agente lo envíe al usuario.\n\nImportante:\n- Aquí NO se envía nada a Telegram.\n- La zona horaria se fuerza en `startISO` con offset -06:00.",
+        "height": 260,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -208
+      ],
+      "id": "5eec381b-1ed8-4b4f-b594-a90beb4df3e9",
+      "name": "🟨 Nota - Overview"
+    },
+    {
+      "parameters": {
+        "content": "🚪 Trigger del sub-workflow (Tool input)\n\n- Se ejecuta cuando otro workflow lo llama.\n- `jsonExample` describe el payload esperado:\n  - chatId\n  - titulo\n  - fecha (YYYY-MM-DD)\n  - hora (HH:mm)\n  - duracion_minutos (opcional)\n\nRegla:\n- El agente debe validar que fecha/hora existan ANTES de llamar esta tool.",
+        "height": 790,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        752,
+        -720
+      ],
+      "id": "e46f191f-f56d-4ee5-8e07-d5cf89525c60",
+      "name": "🟨 Nota - Trigger"
+    },
+    {
+      "parameters": {
+        "content": "🧱 Preparar Datos\n\n- Construye `startISO` con fecha/hora:\n  `YYYY-MM-DDTHH:mm:00-06:00`\n- Define `duracion` con default 60 mins:\n  `duracion = duracion_minutos || 60`\n- Normaliza `titulo`.\n\nOjo:\n- Aquí estás “hardcodeando” el offset -06:00.\n  Si algún día cambias TZ o quieres hacerlo dinámico, conviene usar DateTime + TZ.",
+        "height": 794,
+        "width": 188
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        976,
+        -720
+      ],
+      "id": "9a3667f5-e61b-4a29-9358-7f1c966ff561",
+      "name": "🟨 Nota - Preparar Datos"
+    },
+    {
+      "parameters": {
+        "content": "⏱️ Calcular hora de fin\n\n- Calcula `endISO` a partir de `startISO + duracion(min)`:\n  `DateTime.fromISO(startISO).plus({ minutes: duracion }).toISO()`\n\nVentaja:\n- Evitas errores humanos con horas.\n\nRiesgo típico:\n- Si `startISO` viene mal formado, aquí truena primero (buena señal).",
+        "height": 796,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        -720
+      ],
+      "id": "a7fd184f-e1a2-4c23-ae47-d1e32d1cf86c",
+      "name": "🟨 Nota - Calcular Fin"
+    },
+    {
+      "parameters": {
+        "content": "📅 Crear evento en Google Calendar\n\n- Usa el calendario configurado.\n- Campos:\n  - start = startISO\n  - end = endISO\n  - summary = titulo\n  - description = \"Creado por Asistente IA\"\n\nCosas que suelen romper aquí:\n- OAuth expirado\n- Calendario equivocado\n- Permisos insuficientes\n\nIdea pro:\n- Guardar `eventId`/`htmlLink` en tu memoria (Sheets/DB) para editar o borrar luego.",
+        "height": 788,
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1424,
+        -720
+      ],
+      "id": "ef34c5ed-d610-47d9-a790-67a9f2d4d376",
+      "name": "🟨 Nota - Google Calendar"
+    },
+    {
+      "parameters": {
+        "content": "✅ Respuesta final (texto para el agente)\n\n- Devuelve `resultado` listo para Telegram:\n  - título\n  - fecha\n  - hora inicio\n  - hora fin calculada\n\nTip UX:\n- Puedes incluir duración:\n  `(${duracion} min)`\n- O incluir el día de la semana si quieres más claridad.",
+        "height": 780,
+        "width": 216
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1664,
+        -720
+      ],
+      "id": "b0114093-2d27-46f2-a1ba-c144626e2f09",
+      "name": "🟨 Nota - Respuesta"
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"chatId\": 123,\n  \"titulo\": \"Título del evento\",\n  \"fecha\": \"YYYY-MM-DD\",\n  \"hora\": \"HH:mm\",\n  \"duracion_minutos\": 12\n}"
+      },
+      "id": "a86747fd-dd10-41f6-8ffa-668ec52cb4b6",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        800,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "start-time",
+              "name": "startISO",
+              "value": "={{ $json.fecha }}T{{ $json.hora }}:00-06:00",
+              "type": "string"
+            },
+            {
+              "id": "duration",
+              "name": "duracion",
+              "value": "={{ $json.duracion_minutos || 60 }}",
+              "type": "number"
+            },
+            {
+              "id": "title",
+              "name": "titulo",
+              "value": "={{ $json.titulo }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1024,
+        -80
+      ],
+      "id": "0c0639ab-6d76-4b73-81c8-dedb2e00d592",
+      "name": "Preparar Datos1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "end-time",
+              "name": "endISO",
+              "value": "={{ DateTime.fromISO($json.startISO).plus({minutes: $json.duracion}).toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1248,
+        -80
+      ],
+      "id": "74adf5c6-05db-40f4-98dc-8ff0a47d8f2b",
+      "name": "Calcular Fin1"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "TU_CALENDAR_ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "n8nTest"
+        },
+        "start": "={{ $('Preparar Datos1').item.json.startISO }}",
+        "end": "={{ $('Calcular Fin1').item.json.endISO }}",
+        "additionalFields": {
+          "description": "Creado por Asistente IA",
+          "summary": "={{ $('Preparar Datos1').item.json.titulo }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1472,
+        -80
+      ],
+      "id": "c28245ea-1c03-4bd4-aafd-90d61dc3ac08",
+      "name": "Crear Evento1",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "resultado",
+              "value": "=📅 Evento creado: {{ $('Preparar Datos1').item.json.titulo }} el {{ $json.fecha }} de {{ $json.hora }} a {{ DateTime.fromISO($('Calcular Fin1').item.json.endISO).toFormat('HH:mm') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1696,
+        -80
+      ],
+      "id": "806d5b2f-b404-4da8-8bdd-2ac1129339ae",
+      "name": "Respuesta1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos1": {
+      "main": [
+        [
+          {
+            "node": "Calcular Fin1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular Fin1": {
+      "main": [
+        [
+          {
+            "node": "Crear Evento1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Evento1": {
+      "main": [
+        [
+          {
+            "node": "Respuesta1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "cd56b4cb-0dfa-4252-8e45-a88a0f136dc9",
+  "meta": {
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "at840CHMQXWwbVja",
+  "tags": []
+}

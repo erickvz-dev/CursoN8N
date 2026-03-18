@@ -1,0 +1,349 @@
+{
+  "updatedAt": "2026-02-21T10:01:39.000Z",
+  "createdAt": "2026-02-14T11:49:02.885Z",
+  "id": "NqbxoFxodFLSC1JgbWQMG",
+  "name": "Workflow: Instagram Token Helper",
+  "description": null,
+  "active": false,
+  "isArchived": true,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Instagram Token Helper (Manual HTTP)\n\nEste workflow convierte tu token corto (1 hora)\nen un token largo (60 dias) usando la API directa.\n\n**Necesitas**:\n1. Short Lived Token\n2. App ID (de Facebook Developers)\n3. App Secret (de Facebook Developers)\n\n**Resultado**:\nObtendrás el long_lived_token y tu ig_user_id.",
+        "height": 452,
+        "width": 380
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        64
+      ],
+      "id": "sticky-overview",
+      "name": "Nota: Overview"
+    },
+    {
+      "parameters": {
+        "content": "## Paso 1: Prerequisitos\n\n1. Ve a developers.facebook.com\n2. Copia App ID y App Secret de tu App\n3. Genera Short Lived Token en Graph Explorer\n   (permisos: instagram_basic, instagram_content_publish,\n    pages_show_list, pages_read_engagement)",
+        "height": 268,
+        "width": 340
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        576,
+        160
+      ],
+      "id": "sticky-prereqs",
+      "name": "Nota: Prerequisitos"
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-token",
+              "name": "short_lived_token",
+              "value": "YOUR_SHORT_LIVED_TOKEN",
+              "type": "string"
+            },
+            {
+              "id": "field-app-id",
+              "name": "app_id",
+              "value": "YOUR_APP_ID",
+              "type": "string"
+            },
+            {
+              "id": "field-app-secret",
+              "name": "app_secret",
+              "value": "YOUR_APP_SECRET",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-input",
+      "name": "Set: Inputs",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v21.0/oauth/access_token",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "fb_exchange_token"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.app_id }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.app_secret }}"
+            },
+            {
+              "name": "fb_exchange_token",
+              "value": "={{ $json.short_lived_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-exchange",
+      "name": "HTTP: Exchange Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        704,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v21.0/me/accounts",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "instagram_business_account,name"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "http-get-pages",
+      "name": "HTTP: Get Pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const accounts = $input.first().json.data;\nconst igAccount = accounts.find(acc => acc.instagram_business_account);\n\nif (!igAccount) {\n  throw new Error(\"No se encontró ninguna página de Facebook conectada a una cuenta de Instagram Business.\");\n}\n\nreturn {\n  json: {\n    ig_user_id: igAccount.instagram_business_account.id,\n    page_name: igAccount.name,\n    long_lived_token: $('HTTP: Exchange Token').item.json.access_token,\n    expires_in: $('HTTP: Exchange Token').item.json.expires_in\n  }\n};"
+      },
+      "id": "code-find-account",
+      "name": "Code: Find IG Account",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "res-token",
+              "name": "long_lived_token",
+              "value": "={{ $json.long_lived_token }}",
+              "type": "string"
+            },
+            {
+              "id": "res-id",
+              "name": "ig_user_id",
+              "value": "={{ $json.ig_user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "res-page",
+              "name": "page_name",
+              "value": "={{ $json.page_name }}",
+              "type": "string"
+            },
+            {
+              "id": "res-msg",
+              "name": "status",
+              "value": "✅ CREAR CREDENCIAL 'instagramApi' USANDO long_lived_token",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-result",
+      "name": "Set: Resultado Final",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1424,
+        512
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set: Inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Inputs": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Exchange Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Exchange Token": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Get Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Get Pages": {
+      "main": [
+        [
+          {
+            "node": "Code: Find IG Account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Find IG Account": {
+      "main": [
+        [
+          {
+            "node": "Set: Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "Manual Trigger": [
+      {
+        "json": {},
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "9a8d3125-2cef-4644-9aab-37338f56948c",
+  "activeVersionId": null,
+  "versionCounter": 63,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-14T11:49:02.889Z",
+      "createdAt": "2026-02-14T11:49:02.889Z",
+      "role": "workflow:owner",
+      "workflowId": "NqbxoFxodFLSC1JgbWQMG",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-21T09:56:48.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-21",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

@@ -1,0 +1,76 @@
+{
+  "name": "WF-02-Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4d8e026a-b1bd-453d-9f4d-ad84b1c71a83",
+      "name": "Telegram Trigger",
+      "webhookId": "b1337c29-001a-4996-b96a-449b354b5e1a",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=Hola {{ $json.message.chat.first_name }} {{ $json.message.chat.last_name }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "aa9ba60a-cbf4-40bc-9def-c4c8d74d1417",
+      "name": "Send a text message",
+      "webhookId": "b73bb8c1-bd91-40a3-bd22-a2bff9e520d0",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "b2fe38b4-99ef-4986-9b36-795250a830d8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "28jj06z40fDArZve8PolY",
+  "tags": []
+}

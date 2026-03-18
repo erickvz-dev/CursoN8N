@@ -1,0 +1,898 @@
+{
+  "updatedAt": "2026-02-21T10:00:31.781Z",
+  "createdAt": "2026-02-07T12:20:32.451Z",
+  "id": "jFux8wuxAmzdsaod4X9Rl",
+  "name": "Subflujo: Publish Instagram",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id"
+            },
+            {
+              "name": "tipo"
+            },
+            {
+              "name": "final_asset_url"
+            },
+            {
+              "name": "caption"
+            },
+            {
+              "name": "ig_user_id"
+            },
+            {
+              "name": "file_proxy_base_url"
+            }
+          ]
+        }
+      },
+      "id": "de075b0f-1b4f-4b60-ae9b-ffa5810a73e8",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -752,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "a88f038d-ebe4-4941-8cb5-3d25bf90e81e"
+            },
+            {
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "41b618c7-a576-4f1c-862e-5af584e51183"
+            },
+            {
+              "leftValue": "={{ $json.final_asset_url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "c6a7cba1-9d5a-45fd-b09e-47cf2187de15"
+            },
+            {
+              "leftValue": "={{ $json.ig_user_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "fb5c7fef-941f-4fba-a07f-17f1165dbf83"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dc749e74-a069-4fc2-addd-99f1b6a8dd81",
+      "name": "IF: Validar inputs",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const src = $input.first().json;\nreturn {\n  json: {\n    success: false,\n    id: src.id || '',\n    tipo: src.tipo || '',\n    error: 'Inputs inválidos: requiere id, tipo, final_asset_url e ig_user_id',\n    details: {\n      id: !!src.id,\n      tipo: !!src.tipo,\n      final_asset_url: !!src.final_asset_url,\n      ig_user_id: !!src.ig_user_id,\n      file_proxy_base_url: !!src.file_proxy_base_url\n    }\n  }\n};\n"
+      },
+      "id": "e46515cd-4ffb-4fb6-b464-c5c209fcfdcf",
+      "name": "Return: Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "story",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "reel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "post",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7788cbb9-1923-4b92-a034-880c0881aea0",
+      "name": "Switch: tipo",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "stories",
+        "node": "={{ $json.ig_user_id }}",
+        "videoUrl": "={{ $json.final_asset_url }}",
+        "caption": "={{ $json.caption || '' }}",
+        "additionalFields": {}
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        528
+      ],
+      "id": "e49d2b9a-2840-45ce-971d-d4503465dd03",
+      "name": "Publish: Story (video)",
+      "credentials": {
+        "instagramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Instagram account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "resource": "reels",
+        "node": "={{ $json.ig_user_id }}",
+        "videoUrl": "={{ $json.final_asset_url }}",
+        "caption": "={{ $json.caption || '' }}",
+        "additionalFields": {}
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        720
+      ],
+      "id": "9617888e-881b-4319-bf54-13c82db7b62c",
+      "name": "Publish: Reel",
+      "credentials": {
+        "instagramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Instagram account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "node": "={{ $json.ig_user_id }}",
+        "imageUrl": "={{ $json.final_asset_url }}",
+        "caption": "={{ $json.caption || '' }}",
+        "additionalFields": {}
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        912
+      ],
+      "id": "89d21d0a-2675-4822-9ad8-ae0f6c46769b",
+      "name": "Publish: Post (image)",
+      "credentials": {
+        "instagramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Instagram account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst original = $node[\"When Executed by Another Workflow\"].json;\n\nconst isErr = !!input?.error || !!input?.message?.error || (typeof input?.statusCode === 'number' && input.statusCode >= 400);\n\nreturn {\n  json: {\n    success: !isErr,\n    id: original.id,\n    tipo: original.tipo,\n    ig_user_id: original.ig_user_id,\n    final_asset_url: original.final_asset_url,\n    caption: original.caption || '',\n    instagram_response: input,\n    error: isErr ? (input?.error?.message || input?.message?.error || 'Instagram publish failed') : ''\n  }\n};\n"
+      },
+      "id": "16deb95e-8bdc-4bea-a898-a0befbbda015",
+      "name": "Return: Normalize Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst originalUrl = (input.final_asset_url || '').toString().trim();\nconst base = (input.file_proxy_base_url || '').toString().trim();\n\nlet finalUrl = originalUrl;\n\nconst canUseProxyBase = base.length > 0 && !base.includes('TU_') && /^https?:\\/\\//.test(base);\nconst isDriveUrl = originalUrl.includes('drive.google.com');\n\nif (isDriveUrl && canUseProxyBase) {\n  const idFromPath = originalUrl.match(/\\/d\\/([a-zA-Z0-9_-]{10,})/);\n  const idFromQuery = originalUrl.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);\n  const idFallback = originalUrl.match(/[-\\w]{25,}/);\n\n  const fileId = (idFromPath && idFromPath[1]) || (idFromQuery && idFromQuery[1]) || (idFallback && idFallback[0]) || '';\n\n  if (fileId) {\n    const cleanBase = base.replace(/\\/$/, '');\n    finalUrl = `${cleanBase}/webhook/file-proxy?file_id=${fileId}`;\n  }\n}\n\nreturn {\n  json: {\n    ...input,\n    original_asset_url: originalUrl,\n    final_asset_url: finalUrl\n  }\n};\n"
+      },
+      "id": "ca7a335d-1a1c-437e-a925-deb4ca737fa2",
+      "name": "Code: Normalize URL (Drive -> Proxy)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        704
+      ]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "IF: Validar inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Validar inputs": {
+      "main": [
+        [
+          {
+            "node": "Code: Normalize URL (Drive -> Proxy)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return: Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: tipo": {
+      "main": [
+        [
+          {
+            "node": "Publish: Story (video)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish: Reel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish: Post (image)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish: Story (video)": {
+      "main": [
+        [
+          {
+            "node": "Return: Normalize Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish: Reel": {
+      "main": [
+        [
+          {
+            "node": "Return: Normalize Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish: Post (image)": {
+      "main": [
+        [
+          {
+            "node": "Return: Normalize Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Normalize URL (Drive -> Proxy)": {
+      "main": [
+        [
+          {
+            "node": "Switch: tipo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "id": null,
+          "tipo": null,
+          "final_asset_url": null,
+          "caption": null,
+          "ig_user_id": null,
+          "access_token": null,
+          "graph_version": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "88ee6e60-3d09-40f6-b79b-ae5f2e8df1b0",
+  "activeVersionId": "88ee6e60-3d09-40f6-b79b-ae5f2e8df1b0",
+  "versionCounter": 90,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-07T12:20:32.466Z",
+      "createdAt": "2026-02-07T12:20:32.466Z",
+      "role": "workflow:owner",
+      "workflowId": "jFux8wuxAmzdsaod4X9Rl",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-21T09:56:48.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-21",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T10:00:31.782Z",
+    "createdAt": "2026-02-21T10:00:31.782Z",
+    "versionId": "88ee6e60-3d09-40f6-b79b-ae5f2e8df1b0",
+    "workflowId": "jFux8wuxAmzdsaod4X9Rl",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "id"
+              },
+              {
+                "name": "tipo"
+              },
+              {
+                "name": "final_asset_url"
+              },
+              {
+                "name": "caption"
+              },
+              {
+                "name": "ig_user_id"
+              },
+              {
+                "name": "file_proxy_base_url"
+              }
+            ]
+          }
+        },
+        "id": "de075b0f-1b4f-4b60-ae9b-ffa5810a73e8",
+        "name": "When Executed by Another Workflow",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -752,
+          832
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                },
+                "id": "a88f038d-ebe4-4941-8cb5-3d25bf90e81e"
+              },
+              {
+                "leftValue": "={{ $json.tipo }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                },
+                "id": "41b618c7-a576-4f1c-862e-5af584e51183"
+              },
+              {
+                "leftValue": "={{ $json.final_asset_url }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                },
+                "id": "c6a7cba1-9d5a-45fd-b09e-47cf2187de15"
+              },
+              {
+                "leftValue": "={{ $json.ig_user_id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                },
+                "id": "fb5c7fef-941f-4fba-a07f-17f1165dbf83"
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "dc749e74-a069-4fc2-addd-99f1b6a8dd81",
+        "name": "IF: Validar inputs",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -528,
+          832
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const src = $input.first().json;\nreturn {\n  json: {\n    success: false,\n    id: src.id || '',\n    tipo: src.tipo || '',\n    error: 'Inputs inválidos: requiere id, tipo, final_asset_url e ig_user_id',\n    details: {\n      id: !!src.id,\n      tipo: !!src.tipo,\n      final_asset_url: !!src.final_asset_url,\n      ig_user_id: !!src.ig_user_id,\n      file_proxy_base_url: !!src.file_proxy_base_url\n    }\n  }\n};\n"
+        },
+        "id": "e46515cd-4ffb-4fb6-b464-c5c209fcfdcf",
+        "name": "Return: Error",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -304,
+          928
+        ]
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.tipo }}",
+                      "rightValue": "story",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.tipo }}",
+                      "rightValue": "reel",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "typeValidation": "strict",
+                    "version": 3
+                  },
+                  "conditions": [
+                    {
+                      "leftValue": "={{ $json.tipo }}",
+                      "rightValue": "post",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "7788cbb9-1923-4b92-a034-880c0881aea0",
+        "name": "Switch: tipo",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.4,
+        "position": [
+          -304,
+          704
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "stories",
+          "node": "={{ $json.ig_user_id }}",
+          "videoUrl": "={{ $json.final_asset_url }}",
+          "caption": "={{ $json.caption || '' }}",
+          "additionalFields": {}
+        },
+        "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+        "typeVersion": 1,
+        "position": [
+          -80,
+          528
+        ],
+        "id": "e49d2b9a-2840-45ce-971d-d4503465dd03",
+        "name": "Publish: Story (video)",
+        "credentials": {
+          "instagramApi": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "Instagram account"
+          }
+        },
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "resource": "reels",
+          "node": "={{ $json.ig_user_id }}",
+          "videoUrl": "={{ $json.final_asset_url }}",
+          "caption": "={{ $json.caption || '' }}",
+          "additionalFields": {}
+        },
+        "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+        "typeVersion": 1,
+        "position": [
+          -80,
+          720
+        ],
+        "id": "9617888e-881b-4319-bf54-13c82db7b62c",
+        "name": "Publish: Reel",
+        "credentials": {
+          "instagramApi": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "Instagram account"
+          }
+        },
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "node": "={{ $json.ig_user_id }}",
+          "imageUrl": "={{ $json.final_asset_url }}",
+          "caption": "={{ $json.caption || '' }}",
+          "additionalFields": {}
+        },
+        "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+        "typeVersion": 1,
+        "position": [
+          -80,
+          912
+        ],
+        "id": "89d21d0a-2675-4822-9ad8-ae0f6c46769b",
+        "name": "Publish: Post (image)",
+        "credentials": {
+          "instagramApi": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "Instagram account"
+          }
+        },
+        "continueOnFail": true
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst original = $node[\"When Executed by Another Workflow\"].json;\n\nconst isErr = !!input?.error || !!input?.message?.error || (typeof input?.statusCode === 'number' && input.statusCode >= 400);\n\nreturn {\n  json: {\n    success: !isErr,\n    id: original.id,\n    tipo: original.tipo,\n    ig_user_id: original.ig_user_id,\n    final_asset_url: original.final_asset_url,\n    caption: original.caption || '',\n    instagram_response: input,\n    error: isErr ? (input?.error?.message || input?.message?.error || 'Instagram publish failed') : ''\n  }\n};\n"
+        },
+        "id": "16deb95e-8bdc-4bea-a898-a0befbbda015",
+        "name": "Return: Normalize Output",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          144,
+          640
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nconst originalUrl = (input.final_asset_url || '').toString().trim();\nconst base = (input.file_proxy_base_url || '').toString().trim();\n\nlet finalUrl = originalUrl;\n\nconst canUseProxyBase = base.length > 0 && !base.includes('TU_') && /^https?:\\/\\//.test(base);\nconst isDriveUrl = originalUrl.includes('drive.google.com');\n\nif (isDriveUrl && canUseProxyBase) {\n  const idFromPath = originalUrl.match(/\\/d\\/([a-zA-Z0-9_-]{10,})/);\n  const idFromQuery = originalUrl.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);\n  const idFallback = originalUrl.match(/[-\\w]{25,}/);\n\n  const fileId = (idFromPath && idFromPath[1]) || (idFromQuery && idFromQuery[1]) || (idFallback && idFallback[0]) || '';\n\n  if (fileId) {\n    const cleanBase = base.replace(/\\/$/, '');\n    finalUrl = `${cleanBase}/webhook/file-proxy?file_id=${fileId}`;\n  }\n}\n\nreturn {\n  json: {\n    ...input,\n    original_asset_url: originalUrl,\n    final_asset_url: finalUrl\n  }\n};\n"
+        },
+        "id": "ca7a335d-1a1c-437e-a925-deb4ca737fa2",
+        "name": "Code: Normalize URL (Drive -> Proxy)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -80,
+          704
+        ]
+      }
+    ],
+    "connections": {
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "IF: Validar inputs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Validar inputs": {
+        "main": [
+          [
+            {
+              "node": "Code: Normalize URL (Drive -> Proxy)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Return: Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Switch: tipo": {
+        "main": [
+          [
+            {
+              "node": "Publish: Story (video)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Publish: Reel",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Publish: Post (image)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Publish: Story (video)": {
+        "main": [
+          [
+            {
+              "node": "Return: Normalize Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Publish: Reel": {
+        "main": [
+          [
+            {
+              "node": "Return: Normalize Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Publish: Post (image)": {
+        "main": [
+          [
+            {
+              "node": "Return: Normalize Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Normalize URL (Drive -> Proxy)": {
+        "main": [
+          [
+            {
+              "node": "Switch: tipo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Tu Nombre",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-21T10:00:31.860Z",
+        "id": 117,
+        "workflowId": "jFux8wuxAmzdsaod4X9Rl",
+        "versionId": "88ee6e60-3d09-40f6-b79b-ae5f2e8df1b0",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      },
+      {
+        "createdAt": "2026-02-21T10:00:32.846Z",
+        "id": 118,
+        "workflowId": "jFux8wuxAmzdsaod4X9Rl",
+        "versionId": "88ee6e60-3d09-40f6-b79b-ae5f2e8df1b0",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      }
+    ]
+  }
+}

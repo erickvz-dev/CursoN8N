@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "descripcion": "Telegram Trigger configurado para recibir callback_query (respuestas de botones inline)",
+    "sprint_origen": "Sprint 05",
+    "uso": "Punto de entrada para workflows que responden a botones inline de Telegram"
+  },
+  "parameters": {
+    "updates": ["callback_query"]
+  },
+  "type": "n8n-nodes-base.telegramTrigger",
+  "typeVersion": 1.2,
+  "position": [0, 0],
+  "name": "Telegram - Recibir Decisión",
+  "credentials": {
+    "telegramApi": {
+      "id": "TU_CREDENTIAL_ID",
+      "name": "Telegram account"
+    }
+  }
+}

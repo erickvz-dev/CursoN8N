@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "descripcion": "Nodo Postgres con INSERT que retorna el ID del registro insertado",
+    "sprint_origen": "Sprint 05",
+    "uso": "Insertar datos en Supabase y obtener el ID para usarlo en botones inline o referencias"
+  },
+  "parameters": {
+    "operation": "executeQuery",
+    "query": "INSERT INTO \"Gastos\" (\"Fecha\", \"Empleado\", \"Monto\", \"Categoria\", \"Estado\")\nVALUES ('{{ $json.fecha }}', '{{ $json.empleado }}', {{ $json.monto }}, '{{ $json.categoria }}', 'Pendiente')\nRETURNING id;",
+    "options": {}
+  },
+  "type": "n8n-nodes-base.postgres",
+  "typeVersion": 2.5,
+  "position": [0, 0],
+  "name": "Supabase - Registrar Gasto",
+  "credentials": {
+    "postgres": {
+      "id": "TU_CREDENTIAL_ID",
+      "name": "Supabase Postgres"
+    }
+  }
+}

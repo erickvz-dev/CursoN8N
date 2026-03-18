@@ -1,0 +1,983 @@
+{
+  "name": "Cafetería Nube - B) Factory: Imagen IA + Canva + Export",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Semana 3 (Parte 2) — Pending → Imagen IA → Canva → Done\n\n**Objetivo:** procesar filas `pending` del Sheet, generar imagen con IA, subirla a Canva, crear diseño y marcar la fila como `done`.\n\n**Estados (máquina simple):**\n- `pending` → (tomamos la fila)\n- `processing` → (evita reprocesos mientras generamos)\n- `done` → (guardamos `image_url` y `canva_export_url`)\n\n**Loop principal:**\n1) Leer filas `pending`\n2) Procesar 1 por 1 (Split In Batches)\n3) Marcar `processing`\n4) Generar imagen (Gemini)\n5) Subir asset a Canva (job)\n6) Poll hasta `success`\n7) Crear design en Canva\n8) Actualizar fila a `done`\n9) Repetir hasta terminar",
+        "height": 220,
+        "width": 1400,
+        "color": 7
+      },
+      "id": "911aef2a-99db-4e79-b178-c99e9310a9fe",
+      "name": "Nota - Mapa del flujo",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        -1120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Trigger\n\n**Inicio Manual (para clase)** = modo pruebas.\n\n**Producción:** cambia por Schedule Trigger (Cron) para correr diario/semana.\nEjemplo: `0 9 * * 1-6` (lun-sáb 9am)\n\nTip: este flujo ya “se auto-administra” por `status`.",
+        "height": 344,
+        "width": 200
+      },
+      "id": "c438d830-226f-451b-8acf-96a554b4b921",
+      "name": "Nota - Trigger",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1408,
+        -656
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Google Sheets: Read Rows\n\nFiltra por:\n- `status = pending`\n\nSalida esperada:\n- 0 filas → el flujo termina sin hacer nada.\n- N filas → se envían al batch para procesar una por una.\n\nRecomendación prod:\n- limita cantidad por ejecución si crece (p.ej. 10-20) para evitar timeouts.",
+        "height": 384,
+        "width": 248
+      },
+      "id": "9597c1aa-c9a5-4105-b1b1-639fdabceaa9",
+      "name": "Nota - Leer pendientes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        -656
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Split In Batches (loop)\n\nProcesa **1 fila por vez** para:\n- no saturar Canva/IA\n- poder hacer polling por asset\n- mantener trazabilidad por `id`\n\nConexiones:\n- salida de loop → pasa al siguiente item\n- cuando no hay más items → termina el workflow\n\nNota: `reset: true` reinicia el batch al inicio de la ejecución.",
+        "height": 388,
+        "width": 264
+      },
+      "id": "0871a47f-803b-4bdd-baba-79c02ee362df",
+      "name": "Nota - Batch 1 por 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        -656
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Google Sheets: Update → Processing\n\nAntes de generar imagen, marcamos:\n- `status = processing`\n- `updated_at = now`\n\n¿Para qué?\n- Evita que otro run del workflow vuelva a agarrar el mismo item.\n- Si algo falla, puedes decidir si regresar a `pending` o marcar `error`.\n\nMatching:\n- usa `id` como llave para actualizar la fila correcta.",
+        "height": 394,
+        "width": 296
+      },
+      "id": "1a02f330-87b0-480d-b8b9-aeb88c0e434a",
+      "name": "Nota - Bloquear fila (processing)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Generate an image (Gemini)\n\nConstruye el prompt con campos del row:\n- `tipo` define formato (story 9:16 / post 1:1)\n- `titulo`, `idea`, `tono`, `estilo_visual`, `prompt_imagen`\n\nReglas obligatorias:\n- **SIN texto** en la imagen\n- sin logos / sin marcas reales\n- fondo limpio + composición centrada\n- **espacio negativo** amplio (para texto en Canva)\n\nSalida esperada:\n- imagen en **binary** (campo `data`) para subir a Canva.\n\nSi falla:\n- revisa credencial Gemini\n- revisa que el nodo realmente esté entregando binary en `data`.",
+        "height": 672,
+        "width": 252
+      },
+      "id": "9b50c032-0f36-4d08-aae2-0b6ffb2c6b7a",
+      "name": "Nota - Generar imagen (Gemini)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        -976
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## HTTP: Canva Upload Asset Job\n\nEste endpoint crea un **job** de upload:\n`POST /rest/v1/asset-uploads`\n\nHeaders clave:\n- `Content-Type: application/octet-stream`\n- `Asset-Upload-Metadata`: JSON con `name_base64`\n\nBody:\n- se manda **binary** desde `inputDataFieldName = data`\n\nSalida esperada:\n- `job.id` (para hacer polling)\n\nTip:\n- El upload no es instantáneo → por eso existe el loop de `Wait + Poll`.",
+        "height": 560,
+        "width": 268
+      },
+      "id": "3f7b7c35-4fee-4d94-ac7e-5e6d737a7353",
+      "name": "Nota - Subir asset a Canva (Job)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Polling del Asset Upload Job (Wait → Poll → IF)\n\nCanva procesa el upload de forma asíncrona.\n\nLoop:\n1) `Wait 2s`\n2) `GET /asset-uploads/{job.id}`\n3) `IF job.status == success`\n   - **true** → seguimos a crear diseño\n   - **false** → regresamos a Wait 2s\n\nRecomendación prod:\n- agrega un **contador** (max intentos) para evitar loops infinitos.\n- si status = `failed`, guarda `error_message` en Sheets.",
+        "height": 488,
+        "width": 644
+      },
+      "id": "9274693e-23ea-4d3f-91a0-92484e8a22ef",
+      "name": "Nota - Polling (esperar hasta success)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -800
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## HTTP: Canva Create Design\n\nCrea un diseño nuevo con el asset subido.\n\nBody:\n- `design_type`: custom\n  - story → 1080x1920\n  - post → 1080x1080\n- `title`: usa el título del row\n- `asset_id`: viene del job (`job.asset.id`)\n\nSalida útil:\n- `design.urls.edit_url` (link para editar en Canva)\n- `design.created_at` (timestamp Canva)",
+        "height": 448,
+        "width": 280
+      },
+      "id": "48d65062-57c5-4b4a-b85b-dc5e886304c7",
+      "name": "Nota - Crear design en Canva",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -832
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Google Sheets: Update → Done\n\nActualiza la fila (matching por `id`) con:\n- `status = done`\n- `image_url` = thumbnail del asset\n- `canva_export_url` = `design.urls.edit_url`\n- `updated_at` = now\n\nAdemás reescribe campos base (fecha/tipo/idea/etc.) para asegurar consistencia.\n\nLuego vuelve al batch para procesar el siguiente item.",
+        "height": 404,
+        "width": 280
+      },
+      "id": "631608c6-d267-4380-9a89-2b9f1688c6a9",
+      "name": "Nota - Marcar Done",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        880,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=2134022340"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "done",
+            "image_url": "={{ $('IF: Asset Ready?').item.json.job.asset.thumbnail.url }}",
+            "canva_export_url": "={{ $('HTTP: Canva Create Design').item.json.design.urls.edit_url }}",
+            "updated_at": "={{new Date().toISOString()}}",
+            "id": "={{ $('Split In Batches (1 item)').item.json.id }}",
+            "fecha_objetivo": "={{ $('Split In Batches (1 item)').item.json.fecha_objetivo }}",
+            "tipo": "={{ $('Split In Batches (1 item)').item.json.tipo }}",
+            "objetivo": "={{ $('Split In Batches (1 item)').item.json.objetivo }}",
+            "titulo": "={{ $('Split In Batches (1 item)').item.json.titulo }}",
+            "idea": "={{ $('Split In Batches (1 item)').item.json.idea }}",
+            "tono": "={{ $('Split In Batches (1 item)').item.json.tono }}",
+            "estilo_visual": "={{ $('Split In Batches (1 item)').item.json.estilo_visual }}",
+            "prompt_imagen": "={{ $('Split In Batches (1 item)').item.json.prompt_imagen }}",
+            "caption": "={{ $('Split In Batches (1 item)').item.json.caption }}",
+            "created_at": "={{ $('HTTP: Canva Create Design').item.json.design.created_at }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_objetivo",
+              "displayName": "fecha_objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "objetivo",
+              "displayName": "objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "idea",
+              "displayName": "idea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tono",
+              "displayName": "tono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "estilo_visual",
+              "displayName": "estilo_visual",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "prompt_imagen",
+              "displayName": "prompt_imagen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "canva_export_url",
+              "displayName": "canva_export_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "4644888b-c0f6-4292-815a-aae11bdca4fd",
+      "name": "Google Sheets: Update → Done",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        912,
+        -288
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "ENTRADA: Export exitoso con URLs.\nSALIDA: Fila actualizada.\n\nACCIÓN:\n- status = done\n- image_url = URL de DALL-E\n- canva_export_url = URL final\n- updated_at = timestamp\n\n✅ ÉXITO: Item completado."
+    },
+    {
+      "parameters": {},
+      "id": "08d09b92-cd5e-41cd-9d54-e705e35e22da",
+      "name": "Inicio Manual (para clase)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1328,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=2134022340"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "219c4fee-37d0-43ce-a855-7f5282afea27",
+      "name": "Google Sheets: Read Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -1104,
+        -288
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": true
+        }
+      },
+      "id": "508357a3-6b7f-4da3-9275-41fb7c589d1f",
+      "name": "Split In Batches (1 item)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -880,
+        -288
+      ],
+      "parametersVersion": 1,
+      "notes": "Batch size = 1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{$json.id}}",
+            "status": "processing",
+            "updated_at": "={{$now.toISO()}}",
+            "row_number": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_objetivo",
+              "displayName": "fecha_objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "objetivo",
+              "displayName": "objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "idea",
+              "displayName": "idea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tono",
+              "displayName": "tono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "estilo_visual",
+              "displayName": "estilo_visual",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "prompt_imagen",
+              "displayName": "prompt_imagen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "canva_export_url",
+              "displayName": "canva_export_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ee98ca05-c000-41b0-8594-0a3002911601",
+      "name": "Google Sheets: Update → Processing",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -656,
+        -352
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-image",
+          "mode": "list"
+        },
+        "prompt": "=Genera una imagen para Instagram basada en este brief.\n\nMarca: Cafetería Nube\nFormato: {{$json.tipo === 'story' ? '9:16' : '1:1'}}\n\nTítulo interno: {{$json.titulo}}\nIdea: {{$json.idea}}\nTono: {{$json.tono}}\n\nEstilo visual: {{$json.estilo_visual}}\n\nReglas obligatorias:\n- SIN texto en la imagen.\n- SIN logos, SIN marcas reales.\n- Fondo limpio y claro.\n- Composición centrada.\n- Deja espacio negativo amplio para agregar texto después en Canva.\n- Fotografía realista estilo lifestyle, iluminación suave, minimalista.\n- No mostrar letreros, menús o empaques con letras.\n\nEscena:\n{{$json.prompt_imagen}}\n\nEntrega una sola imagen.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -432,
+        -352
+      ],
+      "id": "182cad90-3e8c-4b03-97be-e5e55a4808fd",
+      "name": "Generate an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.canva.com/rest/v1/asset-uploads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/octet-stream"
+            },
+            {
+              "name": "Asset-Upload-Metadata",
+              "value": "={{ JSON.stringify({ name_base64: \"Z2VtaW5pLnBuZw==\" }) }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "35e79467-8e67-489c-a5b1-6904452bad22",
+      "name": "HTTP: Canva Upload Asset Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        -352
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "CANVA API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        -352
+      ],
+      "id": "9bb4ec5f-a6de-4004-ae45-2c6ccf0cea8b",
+      "name": "Wait 2s",
+      "webhookId": "18caaaf1-897d-496a-bb5e-f875a3f5034e"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.canva.com/rest/v1/asset-uploads/{{ $json.job.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        240,
+        -432
+      ],
+      "id": "a3514c7b-f2b3-48c7-8a76-7815809211e8",
+      "name": "HTTP: Poll Asset Upload Job",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "CANVA API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "9774cfe1-db43-48ef-8e1c-07419691f8d2",
+              "leftValue": "={{ $json.job.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -352
+      ],
+      "id": "5f69ea2d-8f00-42be-a5c0-70272dbc7613",
+      "name": "IF: Asset Ready?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.canva.com/rest/v1/designs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"design_type\": {\n    \"type\": \"custom\",\n    \"width\": {{ $('Split In Batches (1 item)').item.json.tipo === 'story' ? 1080 : 1080 }},\n    \"height\": {{ $('Split In Batches (1 item)').item.json.tipo === 'story' ? 1920 : 1080 }}\n  },\n  \"title\": \"{{ $node['Split In Batches (1 item)'].json.titulo }}\",\n  \"asset_id\": \"{{ $json.job.asset.id }}\"\n}\n",
+        "options": {}
+      },
+      "id": "33d73c5a-4860-419b-a2b7-f51d0c5b3963",
+      "name": "HTTP: Canva Create Design",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        -352
+      ],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "CANVA API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets: Update → Done": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches (1 item)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inicio Manual (para clase)": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Read Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Read Rows": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches (1 item)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches (1 item)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Google Sheets: Update → Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Update → Processing": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Canva Upload Asset Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Canva Upload Asset Job": {
+      "main": [
+        [
+          {
+            "node": "Wait 2s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2s": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Poll Asset Upload Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Poll Asset Upload Job": {
+      "main": [
+        [
+          {
+            "node": "IF: Asset Ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Asset Ready?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Canva Create Design",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 2s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Canva Create Design": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Update → Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "6e7e0be2-c77a-4e3c-8812-2c9b0382bdc5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "9eZku2tdfkrP0Q59LdfCz",
+  "tags": []
+}

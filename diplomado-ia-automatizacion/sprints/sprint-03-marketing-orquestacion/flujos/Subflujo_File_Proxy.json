@@ -1,0 +1,341 @@
+{
+  "updatedAt": "2026-02-21T10:00:35.552Z",
+  "createdAt": "2026-02-14T13:14:49.160Z",
+  "id": "l67t29KPvfuwCcze",
+  "name": "Subflujo: File Proxy",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## File Proxy\n\nEste workflow sirve de puente para archivos de Google Drive.\n\n**Funcionamiento**:\n1. Recibe petición GET con `file_id`\n2. Descarga el archivo de Drive (usando credencial)\n3. Responde con el archivo (stream binario)\n\n**Uso**:\n`https://TU-N8N/webhook/file-proxy?file_id=XYZ`\n\n**Seguridad**: Puedes agregar autenticación Basic Auth al Webhook si lo deseas.",
+        "height": 240,
+        "width": 380
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        80
+      ],
+      "id": "sticky-info",
+      "name": "Nota: Info"
+    },
+    {
+      "parameters": {
+        "path": "file-proxy",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook: GET /file-proxy",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        340
+      ],
+      "webhookId": "file-proxy"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.query.file_id }}",
+          "mode": "id"
+        }
+      },
+      "id": "drive-download",
+      "name": "Google Drive: Download",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        460,
+        340
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "binary",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        680,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "content": "⚠️ **Credencial Google Drive**\n\nAsegúrate de tener una credencial\n'Google Drive account' configurada.\nSi usas Sheets, probablemente necesites\ncrear una nueva para Drive o usar la misma\nsi tiene scopes de Drive.",
+        "height": 200,
+        "width": 300
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        460,
+        500
+      ],
+      "id": "sticky-cred",
+      "name": "Nota: Credencial"
+    }
+  ],
+  "connections": {
+    "Webhook: GET /file-proxy": {
+      "main": [
+        [
+          {
+            "node": "Google Drive: Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive: Download": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "136b6f30-7285-4232-ab11-9f4433c47fd6",
+  "activeVersionId": "136b6f30-7285-4232-ab11-9f4433c47fd6",
+  "versionCounter": 10,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-14T13:14:49.164Z",
+      "createdAt": "2026-02-14T13:14:49.164Z",
+      "role": "workflow:owner",
+      "workflowId": "l67t29KPvfuwCcze",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-21T09:56:48.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-21",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-14T13:14:49.170Z",
+    "createdAt": "2026-02-14T13:14:49.170Z",
+    "versionId": "136b6f30-7285-4232-ab11-9f4433c47fd6",
+    "workflowId": "l67t29KPvfuwCcze",
+    "nodes": [
+      {
+        "parameters": {
+          "content": "## File Proxy\n\nEste workflow sirve de puente para archivos de Google Drive.\n\n**Funcionamiento**:\n1. Recibe petición GET con `file_id`\n2. Descarga el archivo de Drive (usando credencial)\n3. Responde con el archivo (stream binario)\n\n**Uso**:\n`https://TU-N8N/webhook/file-proxy?file_id=XYZ`\n\n**Seguridad**: Puedes agregar autenticación Basic Auth al Webhook si lo deseas.",
+          "height": 240,
+          "width": 380
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          180,
+          80
+        ],
+        "id": "sticky-info",
+        "name": "Nota: Info"
+      },
+      {
+        "parameters": {
+          "path": "file-proxy",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "webhook",
+        "name": "Webhook: GET /file-proxy",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          240,
+          340
+        ],
+        "webhookId": "file-proxy"
+      },
+      {
+        "parameters": {
+          "operation": "download",
+          "fileId": {
+            "__rl": true,
+            "value": "={{ $json.query.file_id }}",
+            "mode": "id"
+          }
+        },
+        "id": "drive-download",
+        "name": "Google Drive: Download",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 2,
+        "position": [
+          460,
+          340
+        ],
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "binary",
+          "options": {}
+        },
+        "id": "respond-webhook",
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          680,
+          340
+        ]
+      },
+      {
+        "parameters": {
+          "content": "⚠️ **Credencial Google Drive**\n\nAsegúrate de tener una credencial\n'Google Drive account' configurada.\nSi usas Sheets, probablemente necesites\ncrear una nueva para Drive o usar la misma\nsi tiene scopes de Drive.",
+          "height": 200,
+          "width": 300
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          460,
+          500
+        ],
+        "id": "sticky-cred",
+        "name": "Nota: Credencial"
+      }
+    ],
+    "connections": {
+      "Webhook: GET /file-proxy": {
+        "main": [
+          [
+            {
+              "node": "Google Drive: Download",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Drive: Download": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Tu Nombre",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-14T13:15:01.505Z",
+        "id": 97,
+        "workflowId": "l67t29KPvfuwCcze",
+        "versionId": "136b6f30-7285-4232-ab11-9f4433c47fd6",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      },
+      {
+        "createdAt": "2026-02-21T10:00:35.596Z",
+        "id": 119,
+        "workflowId": "l67t29KPvfuwCcze",
+        "versionId": "136b6f30-7285-4232-ab11-9f4433c47fd6",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      },
+      {
+        "createdAt": "2026-02-21T10:00:36.391Z",
+        "id": 120,
+        "workflowId": "l67t29KPvfuwCcze",
+        "versionId": "136b6f30-7285-4232-ab11-9f4433c47fd6",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      }
+    ]
+  }
+}

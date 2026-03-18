@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "descripcion": "Par de nodos: Webhook GET + Respond to Webhook con HTML. Crea una página web on-demand.",
+    "sprint_origen": "Sprint 05",
+    "uso": "Crear reportes financieros accesibles desde un enlace en el navegador"
+  },
+  "webhook": {
+    "parameters": {
+      "httpMethod": "GET",
+      "path": "reporte-gastos",
+      "responseMode": "responseNode",
+      "options": {}
+    },
+    "type": "n8n-nodes-base.webhook",
+    "typeVersion": 2,
+    "position": [0, 0],
+    "name": "Webhook - Entrada"
+  },
+  "respond": {
+    "parameters": {
+      "respondWith": "text",
+      "responseBody": "={{ $json.text }}",
+      "options": {
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Content-Type",
+              "value": "text/html"
+            }
+          ]
+        }
+      }
+    },
+    "type": "n8n-nodes-base.respondToWebhook",
+    "typeVersion": 1.1,
+    "position": [600, 0],
+    "name": "Responder al Navegador"
+  }
+}

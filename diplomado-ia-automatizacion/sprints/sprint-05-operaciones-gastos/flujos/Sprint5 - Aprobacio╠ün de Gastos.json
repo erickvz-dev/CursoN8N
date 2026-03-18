@@ -1,0 +1,161 @@
+{
+  "name": "Sprint5 - Aprobación de Gastos",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "f401e9bd-d541-42fe-9b83-76d931b8bc0e",
+      "name": "01 - Telegram Callback Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        64
+      ],
+      "webhookId": "c8a3f920-7e11-4b6a-a5d2-3f9c72e18b44",
+      "credentials": {
+        "telegramApi": {
+          "id": "xVHAjlbHy3mILPIX",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const callback = $json.callback_query;\nconst callbackId = callback.id;\nconst chatId = callback.message.chat.id;\nconst data = callback.data; // \"aprobar_42\" o \"rechazar_42\"\n\nconst separador = data.indexOf(\"_\");\nconst accion = data.substring(0, separador);\nconst registroId = parseInt(data.substring(separador + 1));\n\nconst estado = accion === \"aprobar\" ? \"Aprobado\" : \"Rechazado\";\nconst emoji = accion === \"aprobar\" ? \"✅\" : \"❌\";\n\nreturn [{\n  json: {\n    callback_id: callbackId,\n    chat_id: chatId.toString(),\n    registro_id: registroId,\n    estado: estado,\n    mensaje: `${emoji} Gasto #${registroId} ha sido ${estado}.`\n  }\n}];"
+      },
+      "id": "8c408f70-52cd-4ff2-ab6a-1a4e3dd5fd1a",
+      "name": "02 - Code Extraer Accion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE \"Gastos\" SET \"estado\" = '{{ $json.estado }}' WHERE id = {{ $json.registro_id }} RETURNING *",
+        "options": {}
+      },
+      "id": "0086e925-3d02-4ad1-a3f4-629b18263fdf",
+      "name": "03 - Postgres Update Estado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        960,
+        64
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "btpuoO30ePtQTuXg",
+          "name": "BD Gastos"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot{TU_BOT_TOKEN}/answerCallbackQuery",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"callback_query_id\": \"{{ $('02 - Code Extraer Accion').item.json.callback_id }}\"\n}",
+        "options": {}
+      },
+      "id": "99fc8884-9755-4f44-a870-dc80cca49917",
+      "name": "04 - Telegram Answer Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1184,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('02 - Code Extraer Accion').item.json.chat_id }}",
+        "text": "={{ $('02 - Code Extraer Accion').item.json.mensaje }}",
+        "additionalFields": {}
+      },
+      "id": "deaf5b22-2a54-4817-9d76-a21aa3833a6a",
+      "name": "05 - Telegram Notificar Resultado",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        64
+      ],
+      "webhookId": "a9b4d831-8f22-5c7b-b6e3-4g0d83f29c55",
+      "credentials": {
+        "telegramApi": {
+          "id": "xVHAjlbHy3mILPIX",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "01 - Telegram Callback Trigger": {
+      "main": [
+        [
+          {
+            "node": "02 - Code Extraer Accion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - Code Extraer Accion": {
+      "main": [
+        [
+          {
+            "node": "03 - Postgres Update Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - Postgres Update Estado": {
+      "main": [
+        [
+          {
+            "node": "04 - Telegram Answer Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 - Telegram Answer Callback": {
+      "main": [
+        [
+          {
+            "node": "05 - Telegram Notificar Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a59e69b5-e2f1-4217-9705-5f391c47e4cd",
+  "meta": {
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "dQumZhFy4glyTbSVLA2zF",
+  "tags": []
+}

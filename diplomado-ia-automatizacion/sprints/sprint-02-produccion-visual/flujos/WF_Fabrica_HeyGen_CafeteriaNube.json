@@ -1,0 +1,771 @@
+{
+  "name": "WF_Fabrica_HeyGen_CafeteriaNube",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube_v2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=2134022340"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "pending"
+            },
+            {
+              "lookupColumn": "tipo",
+              "lookupValue": "reel"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "db2a1335-312d-41fb-bdd5-8c5e1e77b987",
+      "name": "Google Sheets: Leer Ideas",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        416,
+        -272
+      ],
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c51f58a0-0342-4550-aaab-f5dd363c5efa",
+      "name": "Split In Batches (1)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        640,
+        -272
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "ef533cd1-cd47-4a6e-964c-1643fe9233f2"
+            },
+            {
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "reel",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "7c00abcd-1e99-4c99-90eb-e06c1c4224f2"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "21c09f2a-ef29-4ba3-b8c9-7a460fa61512",
+      "name": "¿Fila Reel Pendiente?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        864,
+        -272
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube_v2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=2134022340"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "id"
+          ],
+          "value": {
+            "id": "={{ $json.id }}",
+            "status": "processing",
+            "step": "heygen",
+            "error_message": "",
+            "updated_at": "={{ $now.toISO() }}",
+            "heygen_video_id": "",
+            "heygen_video_url": ""
+          },
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "step",
+              "displayName": "step",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "heygen_video_id",
+              "displayName": "heygen_video_id",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "heygen_video_url",
+              "displayName": "heygen_video_url",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "73d3a60c-3d94-4263-b3de-6c784209a316",
+      "name": "Google Sheets: Marcar processing",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1088,
+        -272
+      ],
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"heygen_api_key\": \"\",\n  \"avatar_id\": \"Georgia_sitting_office_front\",\n  \"voice_id\": \"79cb233e53e04419aa6f86db0ce8b192\",\n  \"has_background_video\": false,\n  \"background_video_url\": \"\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1312,
+        -272
+      ],
+      "id": "d797bfb6-c44a-42a0-99db-7a300dfbffcd",
+      "name": "Setup HeyGen (ENV)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $json.heygen_api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"video_inputs\": [\n      {\n        \"character\": {\n          \"type\": \"avatar\",\n          \"avatar_id\": \"{{$json.avatar_id}}\",\n          \"avatar_style\": \"normal\",\n          \"scale\": 1.0\n        },\n        \"voice\": {\n          \"type\": \"text\",\n          \"input_text\": \"{{$(\"Split In Batches (1)\").item.json.script_video}}\",\n          \"voice_id\": \"{{$json.voice_id}}\",\n          \"speed\": 1.1,\n          \"pitch\": 50,\n          \"emotion\": \"Excited\"\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": 720,\n    \"height\": 1280\n  },\n  \"aspect_ratio\": \"9:16\",\n  \"caption\": true,\n  \"title\": \"{{$(\"Split In Batches (1)\").item.json.titulo}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1536,
+        -272
+      ],
+      "id": "f07db8f7-0d5f-4618-9efb-6cb3c52501f4",
+      "name": "HeyGen: Crear video"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1984,
+        -272
+      ],
+      "id": "cb4ef27d-b44a-47bc-9f6a-1a5381020560",
+      "name": "Wait (poll)",
+      "webhookId": "afc7ba40-d317-4941-9f4a-d0e3cc59a480"
+    },
+    {
+      "parameters": {
+        "url": "https://api.heygen.com/v1/video_status.get",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "video_id",
+              "value": "={{ $('Edit Fields').item.json.video_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $('Setup HeyGen (ENV)').item.json.heygen_api_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2208,
+        -336
+      ],
+      "id": "325046b6-6016-4997-9084-0fdadb8690f7",
+      "name": "HeyGen: Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "77775ed0-9e1c-4ac7-ab62-1089ecb3efbf"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2432,
+        -336
+      ],
+      "id": "1d6ea612-195b-4b5f-8475-8aeb88f0eb02",
+      "name": "¿Video listo?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "b4e4f973-84c4-4534-b208-30bfbe1793e9"
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2656,
+        -176
+      ],
+      "id": "e027a010-dd0c-4e15-84e6-7e9e1612fc94",
+      "name": "¿Falló?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube_v2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=2134022340"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "id"
+          ],
+          "value": {
+            "id": "={{ $('Google Sheets: Marcar processing').item.json.id }}",
+            "status": "done",
+            "step": "video",
+            "heygen_video_id": "={{ $('HeyGen: Crear video').item.json.data.video_id }}",
+            "heygen_video_url": "={{ $json.data.video_url || '' }}",
+            "updated_at": "={{ $now.toISO() }}",
+            "error_message": ""
+          },
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "step",
+              "displayName": "step",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "heygen_video_id",
+              "displayName": "heygen_video_id",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "heygen_video_url",
+              "displayName": "heygen_video_url",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a7efbc7d-a1eb-420c-bc49-3c1b95c1eb09",
+      "name": "Google Sheets: Marcar done",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2656,
+        -384
+      ],
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube_v2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=2134022340"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "id"
+          ],
+          "value": {
+            "id": "={{ $('Google Sheets: Marcar processing').item.json.id }}",
+            "status": "error",
+            "step": "heygen",
+            "updated_at": "={{ $now.toISO() }}",
+            "error_message": "={{ $json.data?.error || $json.data?.message || $json.message || JSON.stringify($json) }}"
+          },
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "step",
+              "displayName": "step",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "44d31282-3659-491a-9579-50a445210cd8",
+      "name": "Google Sheets: Marcar error",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2880,
+        -176
+      ],
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bc276edf-53f1-4d0b-aa7f-35a25fe8106a",
+              "name": "video_id",
+              "value": "={{ $json.data.video_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        -272
+      ],
+      "id": "c89a58b7-cad8-4142-9260-24c197aa2c57",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -272
+      ],
+      "id": "17f57ad8-fdfb-4c41-b60a-8e1f57027c3c",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets: Leer Ideas": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches (1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches (1)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "¿Fila Reel Pendiente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Fila Reel Pendiente?": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Marcar processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Split In Batches (1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Marcar processing": {
+      "main": [
+        [
+          {
+            "node": "Setup HeyGen (ENV)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup HeyGen (ENV)": {
+      "main": [
+        [
+          {
+            "node": "HeyGen: Crear video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HeyGen: Crear video": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait (poll)": {
+      "main": [
+        [
+          {
+            "node": "HeyGen: Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HeyGen: Status": {
+      "main": [
+        [
+          {
+            "node": "¿Video listo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Video listo?": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Marcar done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Falló?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Falló?": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Marcar error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait (poll)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Wait (poll)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Leer Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "3bb5fa6a-b79d-4588-a020-bf2a5bc1e85e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "sURUfGpScimueCfC0Abu_",
+  "tags": [
+    {
+      "updatedAt": "2026-01-27T20:19:05.320Z",
+      "createdAt": "2026-01-27T20:19:05.320Z",
+      "id": "FND7tLD6SjsGkzjx",
+      "name": "ejercicio"
+    },
+    {
+      "updatedAt": "2026-01-21T19:40:34.218Z",
+      "createdAt": "2026-01-21T19:40:34.218Z",
+      "id": "r5SXC5P8CB1BMnIO",
+      "name": "Sprint2"
+    },
+    {
+      "updatedAt": "2026-01-27T21:36:30.753Z",
+      "createdAt": "2026-01-27T21:36:30.753Z",
+      "id": "vaR7mJn5CV28oKVt",
+      "name": "semana4"
+    }
+  ]
+}

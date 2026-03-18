@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "descripcion": "HTTP Request a OpenAI Vision API para analizar imágenes (tickets, recibos, fotos)",
+    "sprint_origen": "Sprint 05",
+    "uso": "Enviar una imagen en base64 a GPT-4o para extraer datos estructurados"
+  },
+  "parameters": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/chat/completions",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+      "parameters": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Analiza esta imagen. Extrae los datos y responde ÚNICAMENTE con JSON válido, sin backticks, sin markdown.\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"data:image/jpeg;base64,{{ $binary.data.data }}\"\n          }\n        }\n      ]\n    }\n  ],\n  \"max_tokens\": 200\n}",
+    "options": {}
+  },
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 4.2,
+  "position": [0, 0],
+  "name": "OpenAI - Analizar Imagen",
+  "credentials": {
+    "httpHeaderAuth": {
+      "id": "TU_CREDENTIAL_ID",
+      "name": "OpenAI API Key"
+    }
+  }
+}

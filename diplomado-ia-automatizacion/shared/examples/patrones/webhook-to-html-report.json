@@ -1,0 +1,89 @@
+{
+  "_meta": {
+    "descripcion": "Pipeline de reporte on-demand: webhook GET → consultar DB → IA genera HTML → responder al navegador",
+    "sprint_origen": "Sprint 05",
+    "nodos": 4,
+    "uso": "Crear reportes financieros accesibles desde una URL en el navegador"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "reporte-gastos",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "name": "Webhook - Entrada"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM \"Gastos\";",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [300, 0],
+      "name": "Supabase - Leer Gastos",
+      "credentials": {
+        "postgres": { "id": "TU_CREDENTIAL_ID", "name": "Supabase Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Eres un director financiero. Recibes un JSON con los gastos del período.\nAnalízalos y genera:\n- Total gastado\n- Categoría con mayor gasto\n- Top 3 empleados por monto\n- Gastos pendientes vs aprobados\n- 2 recomendaciones breves\n\nTu ÚNICA salida debe ser código HTML puro con CSS integrado.\nEl primer carácter debe ser < y el último >.\n\nDatos:\n{{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [600, 0],
+      "name": "OpenAI - Generar Reporte",
+      "credentials": {
+        "openAiApi": { "id": "TU_CREDENTIAL_ID", "name": "OpenAi account" }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.text }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "text/html" }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [900, 0],
+      "name": "Responder al Navegador"
+    }
+  ],
+  "connections": {
+    "Webhook - Entrada": {
+      "main": [[{ "node": "Supabase - Leer Gastos", "type": "main", "index": 0 }]]
+    },
+    "Supabase - Leer Gastos": {
+      "main": [[{ "node": "OpenAI - Generar Reporte", "type": "main", "index": 0 }]]
+    },
+    "OpenAI - Generar Reporte": {
+      "main": [[{ "node": "Responder al Navegador", "type": "main", "index": 0 }]]
+    }
+  }
+}

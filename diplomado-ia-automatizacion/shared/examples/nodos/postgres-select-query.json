@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "descripcion": "Nodo Postgres con SELECT para leer datos de Supabase",
+    "sprint_origen": "Sprint 05",
+    "uso": "Leer registros de una tabla para generar reportes o alimentar análisis de IA"
+  },
+  "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT * FROM \"Gastos\" ORDER BY id DESC;",
+    "options": {}
+  },
+  "type": "n8n-nodes-base.postgres",
+  "typeVersion": 2.5,
+  "position": [0, 0],
+  "name": "Supabase - Leer Gastos",
+  "credentials": {
+    "postgres": {
+      "id": "TU_CREDENTIAL_ID",
+      "name": "Supabase Postgres"
+    }
+  }
+}

@@ -1,0 +1,1070 @@
+{
+  "updatedAt": "2026-02-21T11:05:07.628Z",
+  "createdAt": "2026-02-07T03:55:32.079Z",
+  "id": "wgxCza0tyqa7iJB3TDW06",
+  "name": "Subflujo: HeyGen Generate video",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id"
+            },
+            {
+              "name": "titulo"
+            },
+            {
+              "name": "script_video"
+            },
+            {
+              "name": "duracion_sec",
+              "type": "number"
+            },
+            {
+              "name": "aspect_ratio"
+            }
+          ]
+        }
+      },
+      "id": "9277b9b4-3cee-49b2-bb1d-b848653f487f",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2624,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "avatar_id",
+              "value": "b250e382fa154692af7aa38b839e316a",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "voice_id",
+              "value": "d393d461b1dc4294915b5b04f54179f1",
+              "type": "string"
+            },
+            {
+              "id": "614f1fd5-e691-46ff-8e4c-7ff34b9723ee",
+              "name": "heygen_api_key",
+              "value": "TU_API_KEY",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "deccd100-3cba-4bc3-ba43-abb427d62312",
+      "name": "Set: HeyGen Config (avatar/voice)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2400,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\n\n// Control de loop\nconst maxAttempts = 36; // 36 * 10s ~ 6 min\n\n// Dimensiones segun aspect_ratio\n// NOTA: HeyGen free tier requiere 720p max (no 1080p)\nconst ar = (j.aspect_ratio || '9:16').trim();\nlet width = 720;\nlet height = 1280;\n\nif (ar === '1:1') {\n  width = 720;\n  height = 720;\n} else if (ar === '16:9') {\n  width = 1280;\n  height = 720;\n} else {\n  // default 9:16\n  width = 720;\n  height = 1280;\n}\n\nreturn {\n  json: {\n    ...j,\n    _state: {\n      attempts: 0,\n      maxAttempts,\n      width,\n      height\n    }\n  }\n};\n"
+      },
+      "id": "b9d60cb0-f0ca-4da6-b4bd-656f684f40ee",
+      "name": "Code: Init State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2176,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.heygen.com/v2/video/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $('Set: HeyGen Config (avatar/voice)').item.json.heygen_api_key }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"avatar\",\n        \"avatar_id\": \"{{ $json.avatar_id }}\",\n        \"avatar_style\": \"normal\"\n      },\n      \"voice\": {\n        \"type\": \"text\",\n        \"input_text\": \"{{ $('When Executed by Another Workflow').item.json.script_video }}\",\n        \"voice_id\": \"{{ $json.voice_id }}\"\n      },\n      \"background\": {\n        \"type\": \"color\",\n        \"value\": \"#FFFFFF\"\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": {{ $json._state.width }},\n    \"height\": {{ $json._state.height }}\n  },\n  \"test\": false,\n  \"caption\": false\n}\n",
+        "options": {}
+      },
+      "id": "b2c5f164-1348-4b95-89b1-73fd015c0f2f",
+      "name": "HeyGen: Create Video (v2)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1952,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = $input.first().json;\n\n// HeyGen suele responder con { data: { video_id } }\nconst videoId = $input.first().json.data.video_id;\n\nif (!videoId) {\n  throw new Error('HeyGen create video no devolvió video_id (revisa credenciales/body).');\n}\n\nreturn {\n  json: {\n    ...res,\n    video_id: videoId\n  }\n};\n"
+      },
+      "id": "07044f65-8d03-4616-8eaa-daf9ac6eb89e",
+      "name": "Code: Store video_id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.heygen.com/v1/video_status.get?video_id={{ $('Code: Store video_id').item.json.data.video_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $('Code: Init State').item.json.heygen_api_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fc7aa594-19b7-4d63-b9e1-eeaa47f70f8b",
+      "name": "HeyGen: Poll Status (v1)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1280,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst d = data?.data ?? data;\n\nconst status = String(d?.status ?? d?.video_status ?? 'unknown').toLowerCase();\n\nconst collected = [];\nconst walk = (val) => {\n  if (!val) return;\n  if (typeof val === 'string') {\n    if (/^https?:\\/\\//i.test(val)) collected.push(val);\n    return;\n  }\n  if (Array.isArray(val)) {\n    for (const v of val) walk(v);\n    return;\n  }\n  if (typeof val === 'object') {\n    for (const v of Object.values(val)) walk(v);\n  }\n};\nwalk(d);\n\nconst directVideoUrl =\n  collected.find((u) => /\\.mp4(\\?|$)/i.test(u)) ||\n  d?.video_url ||\n  d?.url ||\n  '';\n\nconst shareUrl = collected.find((u) => /heygen\\.com\\/video\\//i.test(u)) || '';\n\nreturn {\n  json: {\n    ...data,\n    _poll: {\n      status: status || 'unknown',\n      video_url: directVideoUrl,\n      share_url: shareUrl\n    }\n  }\n};\n"
+      },
+      "id": "3cbb5854-6d0a-46a1-aaa3-0cb042decd73",
+      "name": "Code: Normalize Poll",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json._poll.status }}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "fb344d1f-f86f-4c3d-bdae-24b94c75f17f"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "df4e6c20-d89f-4945-b322-cba61659931a",
+      "name": "IF: Completed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Code: Normalize Poll').item.json.data.status }}",
+              "rightValue": "processing",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "id": "476d539b-176f-4b6f-bb49-459481fe1ac0"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "31d4e0e0-1978-49db-9448-c188b95d2210",
+      "name": "IF: Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst attempts = (j._state?.attempts ?? 0) + 1;\n\nreturn {\n  json: {\n    ...j,\n    _state: {\n      ...j._state,\n      attempts\n    }\n  }\n};\n"
+      },
+      "id": "4b884871-8aea-44b0-91ef-2278d8574039",
+      "name": "Code: attempts++",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json._state.attempts }}",
+              "rightValue": "={{ $json._state.maxAttempts }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d2ddc83b-a624-421a-bf5c-cd519588bcff",
+      "name": "IF: attempts < maxAttempts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst originalInput = $node[\"When Executed by Another Workflow\"].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: true,\n    status: 'completed',\n    heygen_video_id: j.video_id || j.data?.video_id || '',\n    heygen_video_url: j._poll?.video_url || '',\n    heygen_share_url: j._poll?.share_url || '',\n    heygen_api_key: $node[\"Set: HeyGen Config (avatar/voice)\"].json.heygen_api_key || '',\n    video_url: j._poll?.video_url || ''\n  }\n};\n"
+      },
+      "id": "c033297c-7251-4fe1-b58e-2cd5c5cb85b5",
+      "name": "Code: Output Success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst originalInput = $node[\"When Executed by Another Workflow\"].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    status: 'failed',\n    video_id: j.video_id || '',\n    error: 'HeyGen devolvió status=failed',\n    raw: { poll: j }\n  }\n};\n"
+      },
+      "id": "c6154c46-3fe8-402f-8c93-e0fe34967b63",
+      "name": "Code: Output Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst originalInput = $node[\"When Executed by Another Workflow\"].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    status: 'timeout',\n    video_id: j.video_id || '',\n    error: `HeyGen no completó tras ${j._state?.maxAttempts ?? 36} intentos`,\n    raw: { poll: j }\n  }\n};\n"
+      },
+      "id": "9cc58b83-c8ea-43b8-8bbc-d25b3e28adff",
+      "name": "Code: Output Timeout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "unit": "minutes"
+      },
+      "id": "2f0f918b-4efe-4abc-96e0-73331873d72d",
+      "name": "Wait 5min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1504,
+        -80
+      ],
+      "webhookId": "bfab11a5-3b5c-4027-8256-bf81ec2f80a0"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Set: HeyGen Config (avatar/voice)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: HeyGen Config (avatar/voice)": {
+      "main": [
+        [
+          {
+            "node": "Code: Init State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Init State": {
+      "main": [
+        [
+          {
+            "node": "HeyGen: Create Video (v2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HeyGen: Create Video (v2)": {
+      "main": [
+        [
+          {
+            "node": "Code: Store video_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Store video_id": {
+      "main": [
+        [
+          {
+            "node": "Wait 5min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HeyGen: Poll Status (v1)": {
+      "main": [
+        [
+          {
+            "node": "Code: Normalize Poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Normalize Poll": {
+      "main": [
+        [
+          {
+            "node": "IF: Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Completed?": {
+      "main": [
+        [
+          {
+            "node": "Code: Output Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Failed?": {
+      "main": [
+        [
+          {
+            "node": "Code: Output Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: attempts++",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: attempts++": {
+      "main": [
+        [
+          {
+            "node": "IF: attempts < maxAttempts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: attempts < maxAttempts?": {
+      "main": [
+        [
+          {
+            "node": "Wait 5min",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Output Timeout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5min": {
+      "main": [
+        [
+          {
+            "node": "HeyGen: Poll Status (v1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "id": "NUBE-20260210-STORY-01",
+          "titulo": "Encuentra tu Café Favorito",
+          "script_video": "Presentamos uno de nuestros cafés de temporada y animamos a la comunidad a venir a probarlo.",
+          "duracion_sec": 10,
+          "aspect_ratio": "9:16"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "e0a2512c-f41a-43e4-aee9-c5c5ed1bfc58",
+  "activeVersionId": "e0a2512c-f41a-43e4-aee9-c5c5ed1bfc58",
+  "versionCounter": 125,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-07T03:55:32.345Z",
+      "createdAt": "2026-02-07T03:55:32.345Z",
+      "role": "workflow:owner",
+      "workflowId": "wgxCza0tyqa7iJB3TDW06",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-21T09:56:48.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-21",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T11:05:11.000Z",
+    "createdAt": "2026-02-21T11:05:07.629Z",
+    "versionId": "e0a2512c-f41a-43e4-aee9-c5c5ed1bfc58",
+    "workflowId": "wgxCza0tyqa7iJB3TDW06",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "id"
+              },
+              {
+                "name": "titulo"
+              },
+              {
+                "name": "script_video"
+              },
+              {
+                "name": "duracion_sec",
+                "type": "number"
+              },
+              {
+                "name": "aspect_ratio"
+              }
+            ]
+          }
+        },
+        "id": "9277b9b4-3cee-49b2-bb1d-b848653f487f",
+        "name": "When Executed by Another Workflow",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -2624,
+          -80
+        ]
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "a1",
+                "name": "avatar_id",
+                "value": "b250e382fa154692af7aa38b839e316a",
+                "type": "string"
+              },
+              {
+                "id": "a2",
+                "name": "voice_id",
+                "value": "d393d461b1dc4294915b5b04f54179f1",
+                "type": "string"
+              },
+              {
+                "id": "614f1fd5-e691-46ff-8e4c-7ff34b9723ee",
+                "name": "heygen_api_key",
+                "value": "TU_API_KEY",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "deccd100-3cba-4bc3-ba43-abb427d62312",
+        "name": "Set: HeyGen Config (avatar/voice)",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          -2400,
+          -80
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $input.first().json;\n\n// Control de loop\nconst maxAttempts = 36; // 36 * 10s ~ 6 min\n\n// Dimensiones segun aspect_ratio\n// NOTA: HeyGen free tier requiere 720p max (no 1080p)\nconst ar = (j.aspect_ratio || '9:16').trim();\nlet width = 720;\nlet height = 1280;\n\nif (ar === '1:1') {\n  width = 720;\n  height = 720;\n} else if (ar === '16:9') {\n  width = 1280;\n  height = 720;\n} else {\n  // default 9:16\n  width = 720;\n  height = 1280;\n}\n\nreturn {\n  json: {\n    ...j,\n    _state: {\n      attempts: 0,\n      maxAttempts,\n      width,\n      height\n    }\n  }\n};\n"
+        },
+        "id": "b9d60cb0-f0ca-4da6-b4bd-656f684f40ee",
+        "name": "Code: Init State",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -2176,
+          -80
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.heygen.com/v2/video/generate",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "={{ $('Set: HeyGen Config (avatar/voice)').item.json.heygen_api_key }}"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"video_inputs\": [\n    {\n      \"character\": {\n        \"type\": \"avatar\",\n        \"avatar_id\": \"{{ $json.avatar_id }}\",\n        \"avatar_style\": \"normal\"\n      },\n      \"voice\": {\n        \"type\": \"text\",\n        \"input_text\": \"{{ $('When Executed by Another Workflow').item.json.script_video }}\",\n        \"voice_id\": \"{{ $json.voice_id }}\"\n      },\n      \"background\": {\n        \"type\": \"color\",\n        \"value\": \"#FFFFFF\"\n      }\n    }\n  ],\n  \"dimension\": {\n    \"width\": {{ $json._state.width }},\n    \"height\": {{ $json._state.height }}\n  },\n  \"test\": false,\n  \"caption\": false\n}\n",
+          "options": {}
+        },
+        "id": "b2c5f164-1348-4b95-89b1-73fd015c0f2f",
+        "name": "HeyGen: Create Video (v2)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -1952,
+          -80
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const res = $input.first().json;\n\n// HeyGen suele responder con { data: { video_id } }\nconst videoId = $input.first().json.data.video_id;\n\nif (!videoId) {\n  throw new Error('HeyGen create video no devolvió video_id (revisa credenciales/body).');\n}\n\nreturn {\n  json: {\n    ...res,\n    video_id: videoId\n  }\n};\n"
+        },
+        "id": "07044f65-8d03-4616-8eaa-daf9ac6eb89e",
+        "name": "Code: Store video_id",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1728,
+          -80
+        ]
+      },
+      {
+        "parameters": {
+          "url": "=https://api.heygen.com/v1/video_status.get?video_id={{ $('Code: Store video_id').item.json.data.video_id }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "={{ $('Code: Init State').item.json.heygen_api_key }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "fc7aa594-19b7-4d63-b9e1-eeaa47f70f8b",
+        "name": "HeyGen: Poll Status (v1)",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -1280,
+          -144
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const data = $input.first().json;\n\n// Normaliza el payload: algunos vienen { data: { status, video_url, ... } }\nconst d = data?.data ?? data;\n\nconst status = $input.first().json.data.status.toLowerCase();\n\n// URLs posibles\nconst videoUrl = $input.first().json.data.video_url ?? '';\n\nreturn {\n  json: {\n    ...data,\n    _poll: {\n      status: status || 'unknown',\n      video_url: videoUrl\n    }\n  }\n};\n"
+        },
+        "id": "3cbb5854-6d0a-46a1-aaa3-0cb042decd73",
+        "name": "Code: Normalize Poll",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1056,
+          -144
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json._poll.status }}",
+                "rightValue": "completed",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                },
+                "id": "fb344d1f-f86f-4c3d-bdae-24b94c75f17f"
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "df4e6c20-d89f-4945-b322-cba61659931a",
+        "name": "IF: Completed?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -832,
+          -144
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $('Code: Normalize Poll').item.json.data.status }}",
+                "rightValue": "processing",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEquals"
+                },
+                "id": "476d539b-176f-4b6f-bb49-459481fe1ac0"
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "31d4e0e0-1978-49db-9448-c188b95d2210",
+        "name": "IF: Failed?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -608,
+          -48
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $input.first().json;\nconst attempts = (j._state?.attempts ?? 0) + 1;\n\nreturn {\n  json: {\n    ...j,\n    _state: {\n      ...j._state,\n      attempts\n    }\n  }\n};\n"
+        },
+        "id": "4b884871-8aea-44b0-91ef-2278d8574039",
+        "name": "Code: attempts++",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -384,
+          48
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json._state.attempts }}",
+                "rightValue": "={{ $json._state.maxAttempts }}",
+                "operator": {
+                  "type": "number",
+                  "operation": "lt"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "d2ddc83b-a624-421a-bf5c-cd519588bcff",
+        "name": "IF: attempts < maxAttempts?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -160,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $input.first().json;\nconst originalInput = $node[\"When Executed by Another Workflow\"].json;\n\n// CRÍTICO: Mantener contexto original + agregar URLs de HeyGen\nreturn {\n  json: {\n    ...originalInput,\n    success: true,\n    status: 'completed',\n    heygen_video_id: j.video_id || j.data?.video_id || '',\n    heygen_video_url: j._poll?.video_url || '',\n    video_url: j._poll?.video_url || ''\n  }\n};\n"
+        },
+        "id": "c033297c-7251-4fe1-b58e-2cd5c5cb85b5",
+        "name": "Code: Output Success",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -608,
+          -240
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $input.first().json;\nconst originalInput = $node[\"When Executed by Another Workflow\"].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    status: 'failed',\n    video_id: j.video_id || '',\n    error: 'HeyGen devolvió status=failed',\n    raw: { poll: j }\n  }\n};\n"
+        },
+        "id": "c6154c46-3fe8-402f-8c93-e0fe34967b63",
+        "name": "Code: Output Failed",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -384,
+          -144
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $input.first().json;\nconst originalInput = $node[\"When Executed by Another Workflow\"].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    status: 'timeout',\n    video_id: j.video_id || '',\n    error: `HeyGen no completó tras ${j._state?.maxAttempts ?? 36} intentos`,\n    raw: { poll: j }\n  }\n};\n"
+        },
+        "id": "9cc58b83-c8ea-43b8-8bbc-d25b3e28adff",
+        "name": "Code: Output Timeout",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          80,
+          112
+        ]
+      },
+      {
+        "parameters": {
+          "unit": "minutes"
+        },
+        "id": "2f0f918b-4efe-4abc-96e0-73331873d72d",
+        "name": "Wait 5min",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          -1504,
+          -80
+        ],
+        "webhookId": "bfab11a5-3b5c-4027-8256-bf81ec2f80a0"
+      }
+    ],
+    "connections": {
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Set: HeyGen Config (avatar/voice)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Set: HeyGen Config (avatar/voice)": {
+        "main": [
+          [
+            {
+              "node": "Code: Init State",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Init State": {
+        "main": [
+          [
+            {
+              "node": "HeyGen: Create Video (v2)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HeyGen: Create Video (v2)": {
+        "main": [
+          [
+            {
+              "node": "Code: Store video_id",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Store video_id": {
+        "main": [
+          [
+            {
+              "node": "Wait 5min",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HeyGen: Poll Status (v1)": {
+        "main": [
+          [
+            {
+              "node": "Code: Normalize Poll",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Normalize Poll": {
+        "main": [
+          [
+            {
+              "node": "IF: Completed?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Completed?": {
+        "main": [
+          [
+            {
+              "node": "Code: Output Success",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "IF: Failed?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Failed?": {
+        "main": [
+          [
+            {
+              "node": "Code: Output Failed",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Code: attempts++",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: attempts++": {
+        "main": [
+          [
+            {
+              "node": "IF: attempts < maxAttempts?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: attempts < maxAttempts?": {
+        "main": [
+          [
+            {
+              "node": "Wait 5min",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Code: Output Timeout",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 5min": {
+        "main": [
+          [
+            {
+              "node": "HeyGen: Poll Status (v1)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Tu Nombre",
+    "name": "Version e0a2512c",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-21T11:05:11.987Z",
+        "id": 127,
+        "workflowId": "wgxCza0tyqa7iJB3TDW06",
+        "versionId": "e0a2512c-f41a-43e4-aee9-c5c5ed1bfc58",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      }
+    ]
+  }
+}

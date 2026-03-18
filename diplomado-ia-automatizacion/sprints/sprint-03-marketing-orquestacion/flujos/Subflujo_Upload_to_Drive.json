@@ -1,0 +1,1477 @@
+{
+  "updatedAt": "2026-02-21T11:14:06.002Z",
+  "createdAt": "2026-02-07T13:04:40.694Z",
+  "id": "EbLQ_1KRWwgJThs67k3BM",
+  "name": "Subflujo: Upload to Drive",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "url"
+            },
+            {
+              "name": "canva_design_id"
+            },
+            {
+              "name": "filename"
+            },
+            {
+              "name": "folder_id"
+            },
+            {
+              "name": "asset_type"
+            },
+            {
+              "name": "heygen_video_id"
+            },
+            {
+              "name": "heygen_api_key"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3856,
+        416
+      ],
+      "id": "5c1342bb-d6b6-4c38-bf14-0cafbc243a57",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.filename }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "c1-filename"
+            },
+            {
+              "leftValue": "={{ $json.folder_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "c2-folder"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -3632,
+        416
+      ],
+      "id": "59b5bcb0-68df-4e93-8033-6d5f20365661",
+      "name": "IF: Validar input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.asset_type }}",
+              "rightValue": "image",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "c1-has-canva-id"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -3408,
+        320
+      ],
+      "id": "3d27ebd9-cee4-45ab-826e-794fc96a93f5",
+      "name": "IF: Is Canva Asset?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.canva.com/rest/v1/exports",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"design_id\": \"{{ $json.canva_design_id }}\",\n  \"format\": {\n    \"type\": \"{{ $json.asset_type === 'video' ? 'mp4' : 'png' }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3184,
+        224
+      ],
+      "id": "626c47df-411d-4f7c-9e7e-632f22c39bac",
+      "name": "Canva: Request Export",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "CANVA API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nconst jobId = response?.job?.id;\nif (!jobId) {\n  throw new Error('Canva export no devolvió job.id: ' + JSON.stringify(response));\n}\n\nreturn {\n  json: {\n    ...response,\n    export_job_id: jobId,\n    _state: {\n      attempts: 0,\n      maxAttempts: 30\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2960,
+        224
+      ],
+      "id": "9200cfb8-fed4-4006-8092-13ef21341180",
+      "name": "Code: Store Export Job ID"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2736,
+        224
+      ],
+      "id": "18ae7418-5120-4e4c-986b-c317d3d79bea",
+      "name": "Wait 3s",
+      "webhookId": "canva-export-wait-001"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.canva.com/rest/v1/exports/{{ $json.export_job_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2512,
+        160
+      ],
+      "id": "5010e032-2842-4dc6-951d-173d6ce4f667",
+      "name": "Canva: Poll Export Job",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "CANVA API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\n\n// Normalizar respuesta\nconst job = prev.job ?? prev;\nconst status = job?.status ?? 'unknown';\nconst downloadUrl = job?.url ?? '';\n\nreturn {\n  json: {\n    ...prev,\n    _poll: {\n      status: status,\n      download_url: downloadUrl\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2288,
+        160
+      ],
+      "id": "bf3d78b7-f2a8-46e6-8c6b-64923d0ed9db",
+      "name": "Code: Normalize Poll Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json._poll.status }}",
+              "rightValue": "success",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2064,
+        160
+      ],
+      "id": "b3f899c8-1d70-46d1-b684-a88559a8964f",
+      "name": "IF: Export Success?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json._poll.status }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1840,
+        256
+      ],
+      "id": "9df28095-c43d-4021-a6f8-74092cca14f7",
+      "name": "IF: Export Failed?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst attempts = (j._state?.attempts ?? 0) + 1;\n\nreturn {\n  json: {\n    ...j,\n    _state: {\n      ...j._state,\n      attempts\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        352
+      ],
+      "id": "5b9a5149-f429-436b-84dc-425e8d2d8a33",
+      "name": "Code: attempts++"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json._state.attempts }}",
+              "rightValue": "={{ $json._state.maxAttempts }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1392,
+        448
+      ],
+      "id": "d1f53fbc-5bb2-4c66-801f-5a0005b77993",
+      "name": "IF: attempts < max?"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.job.urls[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1840,
+        -32
+      ],
+      "id": "08dce668-1cd1-4569-8e9d-cd319ca8383a",
+      "name": "HTTP: Download from Canva Export"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.resolved_url || $json.url || $node['When Executed by Another Workflow'].json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3184,
+        416
+      ],
+      "id": "7cfa094d-62ba-4da7-8da9-685619a75f0d",
+      "name": "HTTP: Download Direct URL"
+    },
+    {
+      "parameters": {
+        "name": "={{ $node['When Executed by Another Workflow'].json.filename }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $node['When Executed by Another Workflow'].json.folder_id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1616,
+        -128
+      ],
+      "id": "d82284be-066d-4c5b-b7f5-bb10ca091ff1",
+      "name": "Google Drive: Upload",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const driveResponse = $input.first().json;\nconst originalInput = $node['When Executed by Another Workflow'].json;\n\n// CRÍTICO: Mantener contexto original + agregar URLs de Drive\nreturn {\n  json: {\n    ...originalInput,\n    success: true,\n    drive_file_id: driveResponse.id || '',\n    drive_file_url: driveResponse.webViewLink || driveResponse.webContentLink || '',\n    final_asset_url: driveResponse.webContentLink || driveResponse.webViewLink || ''\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1392,
+        -128
+      ],
+      "id": "e6ef0e61-6d66-4d73-af58-204a429a5b89",
+      "name": "Code: Success Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    error: 'Canva export failed'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        160
+      ],
+      "id": "cc0502d2-3e94-4c79-b320-136e3d7bf2cf",
+      "name": "Code: Failed Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    error: 'Canva export timeout after 90 seconds'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1168,
+        448
+      ],
+      "id": "1b1c1be2-24ab-4df1-b895-508de267a44b",
+      "name": "Code: Timeout Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    error: 'Missing required inputs: filename and folder_id are required. Either url or canva_design_id must be provided.'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3408,
+        512
+      ],
+      "id": "4291860a-4170-4ce3-a99a-0d1a260e5ab6",
+      "name": "Code: Error Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    error: 'Download failed: URL invalid, expired, or not directly downloadable. For HeyGen video provide heygen_video_id (and heygen_api_key) to refresh URL.'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2960,
+        512
+      ],
+      "id": "698e3d46-4265-415e-b8bb-f13e8dd52c68",
+      "name": "Code: Error Download"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.asset_type }}",
+              "rightValue": "video",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "heygen-is-video"
+            },
+            {
+              "leftValue": "={{ $json.heygen_video_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              },
+              "id": "heygen-has-id"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2960,
+        416
+      ],
+      "id": "55f6b4b4-d31d-4f3c-8d83-efa1b6b9eb94",
+      "name": "IF: Refresh HeyGen URL?"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.heygen.com/v1/video_status.get?video_id={{ $node['When Executed by Another Workflow'].json.heygen_video_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $node['When Executed by Another Workflow'].json.heygen_api_key || \"\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2736,
+        320
+      ],
+      "id": "1c8d3515-b700-4055-873c-a1e548cbd236",
+      "name": "HeyGen: Refresh Status URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\nconst payload = $input.first().json;\nconst d = payload?.data ?? payload;\n\nconst urls = [];\nconst walk = (val) => {\n  if (!val) return;\n  if (typeof val === 'string') {\n    if (/^https?:\\/\\//i.test(val)) urls.push(val);\n    return;\n  }\n  if (Array.isArray(val)) {\n    for (const v of val) walk(v);\n    return;\n  }\n  if (typeof val === 'object') {\n    for (const v of Object.values(val)) walk(v);\n  }\n};\nwalk(d);\n\nconst best =\n  urls.find((u) => /\\.mp4(\\?|$)/i.test(u)) ||\n  d?.video_url ||\n  d?.url ||\n  originalInput.url ||\n  '';\n\nif (!best) {\n  throw new Error('HeyGen no devolvió URL de descarga. Verifica video_id y API key.');\n}\n\nreturn {\n  json: {\n    ...originalInput,\n    heygen_status_payload: payload,\n    resolved_url: best,\n    url: best\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2512,
+        320
+      ],
+      "id": "b28e059d-e290-4092-99db-13633e6af42c",
+      "name": "Code: Resolve HeyGen Download URL"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "IF: Validar input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Validar input": {
+      "main": [
+        [
+          {
+            "node": "IF: Is Canva Asset?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Error Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Is Canva Asset?": {
+      "main": [
+        [
+          {
+            "node": "Canva: Request Export",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Refresh HeyGen URL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canva: Request Export": {
+      "main": [
+        [
+          {
+            "node": "Code: Store Export Job ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Store Export Job ID": {
+      "main": [
+        [
+          {
+            "node": "Wait 3s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3s": {
+      "main": [
+        [
+          {
+            "node": "Canva: Poll Export Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canva: Poll Export Job": {
+      "main": [
+        [
+          {
+            "node": "Code: Normalize Poll Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Normalize Poll Result": {
+      "main": [
+        [
+          {
+            "node": "IF: Export Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Export Success?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Download from Canva Export",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Export Failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Export Failed?": {
+      "main": [
+        [
+          {
+            "node": "Code: Failed Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: attempts++",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: attempts++": {
+      "main": [
+        [
+          {
+            "node": "IF: attempts < max?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: attempts < max?": {
+      "main": [
+        [
+          {
+            "node": "Wait 3s",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code: Timeout Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Download from Canva Export": {
+      "main": [
+        [
+          {
+            "node": "Google Drive: Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Download Direct URL": {
+      "main": [
+        [
+          {
+            "node": "Google Drive: Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive: Upload": {
+      "main": [
+        [
+          {
+            "node": "Code: Success Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Refresh HeyGen URL?": {
+      "main": [
+        [
+          {
+            "node": "HeyGen: Refresh Status URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: Download Direct URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HeyGen: Refresh Status URL": {
+      "main": [
+        [
+          {
+            "node": "Code: Resolve HeyGen Download URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Resolve HeyGen Download URL": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Download Direct URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "url": "https://heygen.com/video/09c901b18c694d2ea55e89f1fc0c82c7",
+          "canva_design_id": "",
+          "filename": "NUBE-20260212-story-01.mp4",
+          "folder_id": "TU_DRIVE_FOLDER_ID",
+          "asset_type": "video"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "2574b23f-9d55-4a85-8d22-09efc434887a",
+  "activeVersionId": "c0d36139-0385-493e-9e94-810016602a2c",
+  "versionCounter": 73,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-07T13:04:40.702Z",
+      "createdAt": "2026-02-07T13:04:40.702Z",
+      "role": "workflow:owner",
+      "workflowId": "EbLQ_1KRWwgJThs67k3BM",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-21T09:56:48.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-21",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-21T10:48:25.000Z",
+    "createdAt": "2026-02-21T10:47:46.323Z",
+    "versionId": "c0d36139-0385-493e-9e94-810016602a2c",
+    "workflowId": "EbLQ_1KRWwgJThs67k3BM",
+    "nodes": [
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "url"
+              },
+              {
+                "name": "canva_design_id"
+              },
+              {
+                "name": "filename"
+              },
+              {
+                "name": "folder_id"
+              },
+              {
+                "name": "asset_type"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -3856,
+          416
+        ],
+        "id": "5c1342bb-d6b6-4c38-bf14-0cafbc243a57",
+        "name": "When Executed by Another Workflow"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "leftValue": "={{ $json.filename }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                },
+                "id": "c1-filename"
+              },
+              {
+                "leftValue": "={{ $json.folder_id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                },
+                "id": "c2-folder"
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -3632,
+          416
+        ],
+        "id": "59b5bcb0-68df-4e93-8033-6d5f20365661",
+        "name": "IF: Validar input"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json.canva_design_id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEmpty"
+                },
+                "id": "c1-has-canva-id"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -3408,
+          320
+        ],
+        "id": "3d27ebd9-cee4-45ab-826e-794fc96a93f5",
+        "name": "IF: Is Canva Asset?"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.canva.com/rest/v1/exports",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "oAuth2Api",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"design_id\": \"{{ $json.canva_design_id }}\",\n  \"format\": {\n    \"type\": \"{{ $json.asset_type === 'video' ? 'mp4' : 'png' }}\"\n  }\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -3184,
+          224
+        ],
+        "id": "626c47df-411d-4f7c-9e7e-632f22c39bac",
+        "name": "Canva: Request Export",
+        "credentials": {
+          "oAuth2Api": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "CANVA API"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\n\nconst jobId = response?.job?.id;\nif (!jobId) {\n  throw new Error('Canva export no devolvió job.id: ' + JSON.stringify(response));\n}\n\nreturn {\n  json: {\n    ...response,\n    export_job_id: jobId,\n    _state: {\n      attempts: 0,\n      maxAttempts: 30\n    }\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -2960,
+          224
+        ],
+        "id": "9200cfb8-fed4-4006-8092-13ef21341180",
+        "name": "Code: Store Export Job ID"
+      },
+      {
+        "parameters": {
+          "amount": 3
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          -2736,
+          224
+        ],
+        "id": "18ae7418-5120-4e4c-986b-c317d3d79bea",
+        "name": "Wait 3s",
+        "webhookId": "canva-export-wait-001"
+      },
+      {
+        "parameters": {
+          "url": "=https://api.canva.com/rest/v1/exports/{{ $json.export_job_id }}",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "oAuth2Api",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -2512,
+          160
+        ],
+        "id": "5010e032-2842-4dc6-951d-173d6ce4f667",
+        "name": "Canva: Poll Export Job",
+        "credentials": {
+          "oAuth2Api": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "CANVA API"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const prev = $input.first().json;\n\n// Normalizar respuesta\nconst job = prev.job ?? prev;\nconst status = job?.status ?? 'unknown';\nconst downloadUrl = job?.url ?? '';\n\nreturn {\n  json: {\n    ...prev,\n    _poll: {\n      status: status,\n      download_url: downloadUrl\n    }\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -2288,
+          160
+        ],
+        "id": "bf3d78b7-f2a8-46e6-8c6b-64923d0ed9db",
+        "name": "Code: Normalize Poll Result"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json._poll.status }}",
+                "rightValue": "success",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -2064,
+          160
+        ],
+        "id": "b3f899c8-1d70-46d1-b684-a88559a8964f",
+        "name": "IF: Export Success?"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json._poll.status }}",
+                "rightValue": "failed",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -1840,
+          256
+        ],
+        "id": "9df28095-c43d-4021-a6f8-74092cca14f7",
+        "name": "IF: Export Failed?"
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $input.first().json;\nconst attempts = (j._state?.attempts ?? 0) + 1;\n\nreturn {\n  json: {\n    ...j,\n    _state: {\n      ...j._state,\n      attempts\n    }\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1616,
+          352
+        ],
+        "id": "5b9a5149-f429-436b-84dc-425e8d2d8a33",
+        "name": "Code: attempts++"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "conditions": [
+              {
+                "leftValue": "={{ $json._state.attempts }}",
+                "rightValue": "={{ $json._state.maxAttempts }}",
+                "operator": {
+                  "type": "number",
+                  "operation": "lt"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          -1392,
+          448
+        ],
+        "id": "d1f53fbc-5bb2-4c66-801f-5a0005b77993",
+        "name": "IF: attempts < max?"
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.job.urls[0] }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -1840,
+          -32
+        ],
+        "id": "08dce668-1cd1-4569-8e9d-cd319ca8383a",
+        "name": "HTTP: Download from Canva Export"
+      },
+      {
+        "parameters": {
+          "url": "={{ $node['When Executed by Another Workflow'].json.url }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -3184,
+          416
+        ],
+        "id": "7cfa094d-62ba-4da7-8da9-685619a75f0d",
+        "name": "HTTP: Download Direct URL"
+      },
+      {
+        "parameters": {
+          "name": "={{ $node['When Executed by Another Workflow'].json.filename }}",
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $node['When Executed by Another Workflow'].json.folder_id }}",
+            "mode": "id"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          -1616,
+          -128
+        ],
+        "id": "d82284be-066d-4c5b-b7f5-bb10ca091ff1",
+        "name": "Google Drive: Upload",
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const driveResponse = $input.first().json;\nconst originalInput = $node['When Executed by Another Workflow'].json;\n\n// CRÍTICO: Mantener contexto original + agregar URLs de Drive\nreturn {\n  json: {\n    ...originalInput,\n    success: true,\n    drive_file_id: driveResponse.id || '',\n    drive_file_url: driveResponse.webViewLink || driveResponse.webContentLink || '',\n    final_asset_url: driveResponse.webContentLink || driveResponse.webViewLink || ''\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1392,
+          -128
+        ],
+        "id": "e6ef0e61-6d66-4d73-af58-204a429a5b89",
+        "name": "Code: Success Output"
+      },
+      {
+        "parameters": {
+          "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    error: 'Canva export failed'\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1616,
+          160
+        ],
+        "id": "cc0502d2-3e94-4c79-b320-136e3d7bf2cf",
+        "name": "Code: Failed Output"
+      },
+      {
+        "parameters": {
+          "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    error: 'Canva export timeout after 90 seconds'\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1168,
+          448
+        ],
+        "id": "1b1c1be2-24ab-4df1-b895-508de267a44b",
+        "name": "Code: Timeout Output"
+      },
+      {
+        "parameters": {
+          "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    error: 'Missing required inputs: filename and folder_id are required. Either url or canva_design_id must be provided.'\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -3408,
+          512
+        ],
+        "id": "4291860a-4170-4ce3-a99a-0d1a260e5ab6",
+        "name": "Code: Error Input"
+      },
+      {
+        "parameters": {
+          "jsCode": "const originalInput = $node['When Executed by Another Workflow'].json;\n\nreturn {\n  json: {\n    ...originalInput,\n    success: false,\n    error: 'Download failed: URL is not accessible or invalid'\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -2960,
+          512
+        ],
+        "id": "698e3d46-4265-415e-b8bb-f13e8dd52c68",
+        "name": "Code: Error Download"
+      }
+    ],
+    "connections": {
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "IF: Validar input",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Validar input": {
+        "main": [
+          [
+            {
+              "node": "IF: Is Canva Asset?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Code: Error Input",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Is Canva Asset?": {
+        "main": [
+          [
+            {
+              "node": "Canva: Request Export",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "HTTP: Download Direct URL",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Canva: Request Export": {
+        "main": [
+          [
+            {
+              "node": "Code: Store Export Job ID",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Store Export Job ID": {
+        "main": [
+          [
+            {
+              "node": "Wait 3s",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait 3s": {
+        "main": [
+          [
+            {
+              "node": "Canva: Poll Export Job",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Canva: Poll Export Job": {
+        "main": [
+          [
+            {
+              "node": "Code: Normalize Poll Result",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Normalize Poll Result": {
+        "main": [
+          [
+            {
+              "node": "IF: Export Success?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Export Success?": {
+        "main": [
+          [
+            {
+              "node": "HTTP: Download from Canva Export",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "IF: Export Failed?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Export Failed?": {
+        "main": [
+          [
+            {
+              "node": "Code: Failed Output",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Code: attempts++",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: attempts++": {
+        "main": [
+          [
+            {
+              "node": "IF: attempts < max?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: attempts < max?": {
+        "main": [
+          [
+            {
+              "node": "Wait 3s",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Code: Timeout Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP: Download from Canva Export": {
+        "main": [
+          [
+            {
+              "node": "Google Drive: Upload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP: Download Direct URL": {
+        "main": [
+          [
+            {
+              "node": "Google Drive: Upload",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Drive: Upload": {
+        "main": [
+          [
+            {
+              "node": "Code: Success Output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Tu Nombre",
+    "name": "Version c0d36139",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-21T10:48:25.076Z",
+        "id": 124,
+        "workflowId": "EbLQ_1KRWwgJThs67k3BM",
+        "versionId": "c0d36139-0385-493e-9e94-810016602a2c",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      }
+    ]
+  }
+}

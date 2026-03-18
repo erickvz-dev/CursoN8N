@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "descripcion": "Nodo OpenAI Chat configurado para devolver respuesta en formato JSON estructurado",
+    "sprint_origen": "Sprint 02",
+    "uso": "Generar contenido estructurado (ideas, evaluaciones, planes) con output JSON garantizado"
+  },
+  "parameters": {
+    "modelId": {
+      "__rl": true,
+      "value": "gpt-4o-mini",
+      "mode": "list",
+      "cachedResultName": "gpt-4o-mini"
+    },
+    "messages": {
+      "values": [
+        {
+          "content": "=Genera un plan de contenido semanal con exactamente 7 publicaciones.\n\nResponde ÚNICAMENTE con un array JSON de objetos con estos campos:\n- titulo (string)\n- tipo (\"post\" | \"story\" | \"reel\")\n- idea (string, descripción breve)\n- caption (string, texto para la publicación)\n\nContexto:\n{{ $json.brief }}"
+        }
+      ]
+    },
+    "options": {
+      "textFormat": {
+        "textOptions": {
+          "type": "json_object"
+        }
+      }
+    }
+  },
+  "type": "@n8n/n8n-nodes-langchain.openAi",
+  "typeVersion": 2.1,
+  "position": [0, 0],
+  "name": "OpenAI - Generar Plan",
+  "credentials": {
+    "openAiApi": {
+      "id": "TU_CREDENTIAL_ID",
+      "name": "OpenAi account"
+    }
+  }
+}

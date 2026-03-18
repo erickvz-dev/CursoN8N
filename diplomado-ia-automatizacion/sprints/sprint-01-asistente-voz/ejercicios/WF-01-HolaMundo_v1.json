@@ -1,0 +1,99 @@
+{
+  "name": "WF-01-HolaMundo_v1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a36218bb-82e8-45a4-857f-f4b7d9a94d11",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a4f1aa49-0d05-4b2e-8485-66507b879107",
+              "name": "mensaje",
+              "value": "Hola mundo",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "57f357e5-4c43-4ab9-b96c-b2d8321f232e",
+      "name": "Set Message"
+    },
+    {
+      "parameters": {
+        "sendTo": "tu@email.com",
+        "subject": "={{ $json.mensaje }}",
+        "message": "={{ $json.mensaje }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5f51d79c-231b-4277-ae4e-b99a4a74651f",
+      "name": "Send a message",
+      "webhookId": "93280eda-518c-4de6-aaf2-73e711efe1cf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Message": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "7969a785-8c1b-46fe-890e-ba21aa9db669",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "oGoKXkb0DEQjFRPXaRqP7",
+  "tags": []
+}

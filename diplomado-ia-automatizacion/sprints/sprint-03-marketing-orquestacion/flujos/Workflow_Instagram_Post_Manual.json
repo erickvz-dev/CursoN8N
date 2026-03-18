@@ -1,0 +1,477 @@
+{
+  "updatedAt": "2026-02-17T23:34:22.937Z",
+  "createdAt": "2026-02-14T11:16:20.172Z",
+  "id": "bA6g_efRR2bh6qpGh95fk",
+  "name": "Workflow: Instagram Post Manual",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Instagram Post Manual\n\n**Workflow independiente** — no depende de la Fabrica de Contenido.\n\nPublica directamente a Instagram desde una URL de imagen/video.\n\n**Prerequisitos**:\n1. Nodo community: @mookielianhd/n8n-nodes-instagram instalado\n2. Credencial instagramApi configurada en n8n\n3. Tu Instagram User ID (obtenlo con Token Helper)\n\n**Uso**:\n1. Edita el nodo \"Set: Datos del Post\"\n2. Pon la URL de tu imagen/video y el caption\n3. Click Execute Workflow\n4. Configura file_proxy_base_url con tu URL n8n (ej: https://tu-instancia.n8n.cloud) para usar File Proxy con Drive",
+        "height": 340,
+        "width": 420
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -64
+      ],
+      "id": "sticky-overview",
+      "name": "Nota: Como Usar"
+    },
+    {
+      "parameters": {
+        "content": "## Tipos de contenido\n\n**post** → Imagen (JPG/PNG)\n  Usa imageUrl\n\n**story** → Imagen o Video\n  Usa videoUrl (resource: stories)\n\n**reel** → Video (MP4)\n  Usa videoUrl (resource: reels)\n\nCambia el campo \"tipo\" en Set\npara elegir que publicar.",
+        "height": 280,
+        "width": 300
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        640,
+        -64
+      ],
+      "id": "sticky-types",
+      "name": "Nota: Tipos"
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "field-tipo",
+              "name": "tipo",
+              "value": "story",
+              "type": "string"
+            },
+            {
+              "id": "field-asset-url",
+              "name": "asset_url",
+              "value": "https://drive.google.com/file/d/1kL7kpZHUsd2AgoR477DK0Bo18pD-rTE9/view?usp=sharing",
+              "type": "string"
+            },
+            {
+              "id": "field-caption",
+              "name": "caption",
+              "value": "Tu caption aqui ☕ #CafeteriaNube",
+              "type": "string"
+            },
+            {
+              "id": "field-ig-user-id",
+              "name": "ig_user_id",
+              "value": "TU_IG_USER_ID",
+              "type": "string"
+            },
+            {
+              "id": "field-proxy-base",
+              "name": "file_proxy_base_url",
+              "value": "https://TU_INSTANCIA_N8N",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-post-data",
+      "name": "Set: Datos del Post",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Limpiar y proxy URL de Drive\nconst input = $input.item.json;\nconst url = (input.asset_url || '').toString();\nconst base = (input.file_proxy_base_url || '').toString().trim();\nlet cleanUrl = url;\n\nconst canUseProxyBase = base.length > 0 && !base.includes('TU_') && /^https?:\\/\\//.test(base);\n\n// Si es Google Drive y tenemos base URL configurada, convertir a Proxy\nif (url && url.includes('drive.google.com') && canUseProxyBase) {\n  const idFromPath = url.match(/\\/d\\/([a-zA-Z0-9_-]{10,})/);\n  const idFromQuery = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);\n  const idFallback = url.match(/[-\\w]{25,}/);\n  const fileId = (idFromPath && idFromPath[1]) || (idFromQuery && idFromQuery[1]) || (idFallback && idFallback[0]) || '';\n\n  if (fileId) {\n    const cleanBase = base.replace(/\\/$/, '');\n    cleanUrl = `${cleanBase}/webhook/file-proxy?file_id=${fileId}`;\n  }\n}\n\nreturn {\n  json: {\n    ...input,\n    asset_url: cleanUrl,\n    original_url: url\n  }\n};"
+      },
+      "id": "clean-url",
+      "name": "Code: Clean URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "story",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "39b88f86-4151-4c8d-a84c-55ed524d6ac7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Story"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "reel",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "308efca6-9eca-445e-96ec-2ca6956266a6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Reel"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "post",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "75a847ab-1f29-476a-8805-82ec7f40fc0c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Post"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-tipo",
+      "name": "Switch: Tipo de Contenido",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "stories",
+        "node": "={{ $json.ig_user_id }}",
+        "videoUrl": "={{ $json.asset_url }}",
+        "caption": "={{ $json.caption }}",
+        "additionalFields": {}
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        208
+      ],
+      "id": "publish-story",
+      "name": "Publish: Story",
+      "credentials": {
+        "instagramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Instagram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "reels",
+        "node": "={{ $json.ig_user_id }}",
+        "videoUrl": "={{ $json.asset_url }}",
+        "caption": "={{ $json.caption }}",
+        "additionalFields": {}
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        384
+      ],
+      "id": "publish-reel",
+      "name": "Publish: Reel",
+      "credentials": {
+        "instagramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Instagram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "node": "={{ $json.ig_user_id }}",
+        "imageUrl": "={{ $json.asset_url }}",
+        "caption": "={{ $json.caption }}",
+        "additionalFields": {}
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        560
+      ],
+      "id": "publish-post",
+      "name": "Publish: Post",
+      "credentials": {
+        "instagramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Instagram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result-status",
+              "name": "status",
+              "value": "={{ $json.id ? '✅ Publicado exitosamente' : '❌ Error al publicar' }}",
+              "type": "string"
+            },
+            {
+              "id": "result-ig-id",
+              "name": "instagram_id",
+              "value": "={{ $json.id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "result-response",
+              "name": "response",
+              "value": "={{ JSON.stringify($json) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "result",
+      "name": "Set: Resultado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1472,
+        384
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set: Datos del Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set: Datos del Post": {
+      "main": [
+        [
+          {
+            "node": "Code: Clean URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Clean URL": {
+      "main": [
+        [
+          {
+            "node": "Switch: Tipo de Contenido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Tipo de Contenido": {
+      "main": [
+        [
+          {
+            "node": "Publish: Story",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish: Reel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish: Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish: Story": {
+      "main": [
+        [
+          {
+            "node": "Set: Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish: Reel": {
+      "main": [
+        [
+          {
+            "node": "Set: Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish: Post": {
+      "main": [
+        [
+          {
+            "node": "Set: Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "d05b96b5-a00a-4b4e-a60d-679fc33bab09",
+  "activeVersionId": null,
+  "versionCounter": 31,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-14T11:16:20.177Z",
+      "createdAt": "2026-02-14T11:16:20.177Z",
+      "role": "workflow:owner",
+      "workflowId": "bA6g_efRR2bh6qpGh95fk",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-17T21:52:17.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-17",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

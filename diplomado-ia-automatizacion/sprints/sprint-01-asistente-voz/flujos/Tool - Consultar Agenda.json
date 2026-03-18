@@ -1,0 +1,253 @@
+{
+  "name": "Tool - Consultar Agenda",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "🧩 Sub-agente: Consultar Agenda (Tool)\n\nQué hace:\n- Este workflow se ejecuta como *tool* desde el Agente principal.\n- Entrada esperada:\n  - chatId (number)\n  - fecha (string YYYY-MM-DD) opcional\n\nSalida:\n- `resultado` (string) con la agenda formateada para Telegram.\n\nNota: aquí NO se envía mensaje a Telegram. Solo se regresa texto al agente.",
+        "height": 240,
+        "width": 520
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        288
+      ],
+      "id": "327a462e-03a8-4f68-8d99-4f34e5002b5d",
+      "name": "🟨 Nota - Overview"
+    },
+    {
+      "parameters": {
+        "content": "🚪 Trigger del sub-workflow\n\n- Se ejecuta únicamente cuando otro workflow lo llama (Execute Workflow / Tool).\n- Útil para pruebas: el `jsonExample` es un ejemplo del payload esperado.\n\nRecomendación:\n- Mantén el schema simple y estable, porque el agente se basa en él.",
+        "height": 840,
+        "width": 182
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        544,
+        -336
+      ],
+      "id": "263e6c29-c8cb-4183-9f40-574e4be6753b",
+      "name": "🟨 Nota - Trigger (Tool input)"
+    },
+    {
+      "parameters": {
+        "content": "🗓️ Normalización de fecha\n\n- Si `fecha` viene vacía, usa HOY:\n  `fecha = $json.fecha || $now.toFormat('yyyy-MM-dd')`\n\nEsto permite comandos tipo:\n- “¿Qué tengo hoy?” (sin fecha)\n- “¿Qué tengo mañana?” (fecha ya calculada por el agente)\n\nTip:\n- Este nodo debe ser el único lugar donde se define el default.",
+        "height": 844,
+        "width": 198
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -336
+      ],
+      "id": "95644d35-3232-476b-a39b-9638af5b9d2e",
+      "name": "🟨 Nota - Preparar Fecha"
+    },
+    {
+      "parameters": {
+        "content": "📚 Obtener eventos de Google Calendar\n\n- Lee eventos del calendario configurado.\n- Este nodo devuelve items por evento.\n\nCosas que suelen romper aquí:\n- Token expirado / credenciales OAuth\n- Zona horaria del calendario vs zona horaria del agente\n\nIdea:\n- Si quieres filtrar por rango horario del día (00:00-23:59), hazlo aquí (si el node lo permite) o con un Function posterior.",
+        "height": 848,
+        "width": 172
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        -336
+      ],
+      "id": "8b6a2626-9e87-4c39-9c3a-76e893388f12",
+      "name": "🟨 Nota - Google Calendar"
+    },
+    {
+      "parameters": {
+        "content": "🧺 Agrupar eventos en un solo item\n\n- Convierte N items (uno por evento) en 1 item con:\n  `eventos: [...]`\n\nRazón:\n- Facilita formateo final (map/join) y evita múltiples salidas.\n\nSi no hay eventos:\n- `eventos.length === 0` se usa en el formateo.",
+        "height": 834,
+        "width": 184
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        -336
+      ],
+      "id": "966e7649-8420-459d-9b8e-336c3d83f1c3",
+      "name": "🟨 Nota - Agrupar Eventos"
+    },
+    {
+      "parameters": {
+        "content": "📝 Formateo listo para Telegram\n\n- Crea `resultado` como string:\n  - Encabezado con fecha\n  - Lista numerada con hora + summary\n  - Si no hay eventos: mensaje claro\n\nDetalle técnico:\n- Hora:\n  `DateTime.fromISO(e.start.dateTime || e.start.date).toFormat('HH:mm')`\n\nSugerencia UX:\n- Puedes incluir también la duración o ubicación si existe:\n  `e.location` / `e.end`.",
+        "height": 816,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        -336
+      ],
+      "id": "d0ccacd8-0ffd-4cbf-9987-1b56f6177cd3",
+      "name": "🟨 Nota - Formatear Respuesta"
+    },
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"chatId\": 1223,\n  \"fecha\": \"YYYY-MM-DD\"\n}"
+      },
+      "id": "8969b333-f383-4b8f-9d71-4b518155b6a4",
+      "typeVersion": 1.1,
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        592,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "target-date",
+              "name": "fecha",
+              "value": "={{ $json.fecha || $now.toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        352
+      ],
+      "id": "793508f1-9dda-4f17-9c7b-e9823b1cee06",
+      "name": "Preparar Fecha"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "TU_CALENDAR_ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "n8nTest"
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1072,
+        352
+      ],
+      "id": "de31409b-adbf-4911-8e31-b756b26dbb70",
+      "name": "Obtener Eventos",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "eventos",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        352
+      ],
+      "id": "4e54bfe3-1a7c-4f78-a00c-aaa33d980c28",
+      "name": "Agrupar Eventos"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "format-list",
+              "name": "resultado",
+              "value": "=📅 Agenda para {{ $('Preparar Fecha').item.json.fecha }}:\n\n{{ $json.eventos.length === 0 ? 'No tienes eventos para este día' : $json.eventos.map((e, i) => `${i+1}. ${DateTime.fromISO(e.start.dateTime || e.start.date).toFormat('HH:mm')} - ${e.summary || 'Sin título'}`).join('\\n') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1520,
+        352
+      ],
+      "id": "484b6135-f5f8-44e0-9cbe-ebc5406a423a",
+      "name": "Formatear Respuesta"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Preparar Fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Fecha": {
+      "main": [
+        [
+          {
+            "node": "Obtener Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Eventos": {
+      "main": [
+        [
+          {
+            "node": "Agrupar Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agrupar Eventos": {
+      "main": [
+        [
+          {
+            "node": "Formatear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "a1e4217f-52f4-41cc-a2aa-25afb1e9d4d1",
+  "meta": {
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "NZ9pvnwg7NiRdxeq",
+  "tags": []
+}

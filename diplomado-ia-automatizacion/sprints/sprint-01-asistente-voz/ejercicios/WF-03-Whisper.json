@@ -1,0 +1,141 @@
+{
+  "name": "WF-03-Whisper",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        -80
+      ],
+      "id": "2968a511-6f05-4172-8211-c017266029db",
+      "name": "Telegram Trigger",
+      "webhookId": "ba8083f7-02a2-4379-a3eb-c24ac2b8218f",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        -80
+      ],
+      "id": "48687987-5476-4c23-b576-ac953dfcdbab",
+      "name": "Get a file",
+      "webhookId": "7d3a265c-f41f-4d87-9ef0-e0ef8f66a267",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        208,
+        -80
+      ],
+      "id": "e41cb959-5295-408f-8879-bd20b582322a",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        -80
+      ],
+      "id": "21233fce-fb85-42fb-b0f3-2d2a47589ab6",
+      "name": "Send a text message",
+      "webhookId": "4e5c479f-ffc9-41b7-99ea-9d13a99af4f2",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "398ced45-f9fa-49ee-855e-35247204b693",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "eaXdbUN0rwIfSpw6xOugk",
+  "tags": []
+}

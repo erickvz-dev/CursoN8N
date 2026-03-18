@@ -1,0 +1,177 @@
+{
+  "_meta": {
+    "descripcion": "AI Agent con tools directas: nodos conectados como ai_tool usando $fromAI() para parámetros dinámicos. Patrón Sprint 7 (Agente Vendedor WhatsApp).",
+    "sprint_origen": "Sprint 07",
+    "nodos": 6,
+    "uso": "Cuando las tools son de un solo paso (HTTP Request, Set, Kommo). Más simple que sub-workflows. Reemplazar credenciales y system prompt."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "promptType": "define",
+        "text": "=Número del prospecto: {{ $('NODO_ANTERIOR').item.json.telefono }}\nNombre: {{ $('NODO_ANTERIOR').item.json.nombre }}\nDeal ID: {{ $('NODO_ANTERIOR').item.json.deal_id }}\nMensaje recibido: {{ $('NODO_ANTERIOR').item.json.mensaje }}",
+        "systemMessage": "[INSERTAR SYSTEM PROMPT DEL AGENTE AQUÍ]",
+        "options": {}
+      },
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [-200, 220],
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAI diplomado"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionKey": "=wa_{{ $('NODO_ANTERIOR').item.json.telefono }}",
+        "contextWindowLength": 10
+      },
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [0, 220]
+    },
+    {
+      "parameters": {
+        "name": "obtener_historial_deal",
+        "description": "Úsala cuando necesites saber el historial, notas previas, producto de interés, o información de la conversación anterior del prospecto. Requiere el deal_id.",
+        "resource": "note",
+        "operation": "getAll",
+        "entityType": "lead",
+        "entityId": "={{ $fromAI('deal_id', 'ID del deal del prospecto') }}"
+      },
+      "name": "Tool A: obtener_historial",
+      "type": "n8n-nodes-kommo.kommo",
+      "typeVersion": 1,
+      "position": [200, 220],
+      "credentials": {
+        "kommoLongLivedApi": {
+          "id": "TU_KOMMO_CREDENTIAL_ID",
+          "name": "Kommo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "consultar_catalogo_cafeteria",
+        "description": "Úsala cuando el prospecto pregunte sobre precios, opciones de menú, disponibilidad, qué incluye el servicio, o para calcular el costo total de un evento.",
+        "mode": "raw",
+        "jsonOutput": "={\n  \"catering_corporativo\": {\n    \"nombre_comercial\": \"Catering Ejecutivo\",\n    \"descripcion\": \"Box lunch premium para eventos y reuniones corporativas\",\n    \"precio_por_persona\": 180,\n    \"minimo_personas\": 15,\n    \"maximo_personas\": 500,\n    \"incluye\": \"entrada fría, plato fuerte a elegir, postre, agua mineral\",\n    \"tiempo_anticipacion_horas\": 72,\n    \"objecion_mas_comun\": \"parece caro para hacerlo frecuente\",\n    \"respuesta_a_la_objecion\": \"Si tu equipo de 20 personas sale a comer cada día, pierden 40 minutos en promedio. En un mes son 800 minutos, equivalente a 2 días de trabajo. El catering se entrega en tu oficina y el equipo come en 20 minutos.\"\n  },\n  \"catering_social\": {\n    \"nombre_comercial\": \"Catering Social Premium\",\n    \"descripcion\": \"Menú gourmet completo para bodas, XV años, cumpleaños y eventos familiares\",\n    \"precio_por_persona\": 280,\n    \"minimo_personas\": 20,\n    \"maximo_personas\": 300,\n    \"incluye\": \"3 tiempos completos, barra de bebidas, meseros, montaje y desmontaje\",\n    \"tiempo_anticipacion_horas\": 168,\n    \"objecion_mas_comun\": \"es mucha logística coordinar el catering con todo lo demás del evento\",\n    \"respuesta_a_la_objecion\": \"Por eso existe el servicio: nosotros nos encargamos de todo lo de la comida. Llegas el día del evento y la mesa ya está montada.\"\n  },\n  \"cafe_oficina\": {\n    \"nombre_comercial\": \"Café de Oficina\",\n    \"descripcion\": \"Servicio mensual de café premium, snacks y bebidas para oficinas\",\n    \"precio_mensual\": 2800,\n    \"minimo_personas\": 5,\n    \"incluye\": \"café de especialidad, leche, azúcar, snacks variados, reposición semanal\",\n    \"objecion_mas_comun\": \"ya tenemos una cafetera\",\n    \"respuesta_a_la_objecion\": \"La diferencia está en la calidad del café y en no preocuparte por el stock. El ambiente de trabajo mejora notablemente.\"\n  },\n  \"box_lunch\": {\n    \"nombre_comercial\": \"Box Lunch Express\",\n    \"descripcion\": \"Órdenes de box lunch para grupos pequeños, ideal para juntas y capacitaciones\",\n    \"precio_por_persona\": 150,\n    \"minimo_personas\": 5,\n    \"maximo_personas\": 50,\n    \"incluye\": \"sándwich o wrap, ensalada, fruta, refresco o agua\",\n    \"tiempo_anticipacion_horas\": 24,\n    \"objecion_mas_comun\": \"no sé si van a querer todos lo mismo\",\n    \"respuesta_a_la_objecion\": \"Cada box es individual con opciones: pueden elegir entre 3 opciones de proteína al hacer el pedido.\"\n  }\n}"
+      },
+      "name": "Tool B: consultar_catalogo",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [400, 220]
+    },
+    {
+      "parameters": {
+        "name": "responder_por_whatsapp",
+        "description": "Úsala para enviar un mensaje de texto al prospecto por WhatsApp. Proporciona el número de teléfono y el texto del mensaje.",
+        "method": "POST",
+        "url": "https://graph.facebook.com/v18.0/TU_PHONE_NUMBER_ID/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer TU_META_ACCESS_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $fromAI('telefono', 'Número de teléfono del destinatario sin el +') }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"{{ $fromAI('mensaje', 'Texto del mensaje a enviar al prospecto') }}\"\n  }\n}",
+        "options": {}
+      },
+      "name": "Tool C: responder_usuario",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 220]
+    }
+  ],
+  "connections": {
+    "AI Agent": {
+      "main": [[]]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool A: obtener_historial": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool B: consultar_catalogo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool C: responder_usuario": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

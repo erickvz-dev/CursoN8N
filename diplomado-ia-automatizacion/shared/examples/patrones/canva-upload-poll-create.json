@@ -1,0 +1,84 @@
+{
+  "_meta": {
+    "descripcion": "Pipeline completo de Canva: subir imagen → poll status → crear diseño",
+    "sprint_origen": "Sprint 02 / Sprint 03",
+    "nodos": 3,
+    "uso": "Subir una imagen generada por IA a Canva y crear un diseño listo para publicar"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.canva.com/rest/v1/asset-uploads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/octet-stream" },
+            { "name": "Asset-Upload-Metadata", "value": "={{ JSON.stringify({ name_base64: $json._state.name_base64 }) }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 0],
+      "name": "Canva: Upload Asset Job",
+      "credentials": {
+        "oAuth2Api": { "id": "TU_CREDENTIAL_ID", "name": "CANVA API" }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.canva.com/rest/v1/asset-uploads/{{ $json.job.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [300, 0],
+      "name": "Canva: Poll Upload Job",
+      "credentials": {
+        "oAuth2Api": { "id": "TU_CREDENTIAL_ID", "name": "CANVA API" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.canva.com/rest/v1/designs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"design_type\": {\n    \"type\": \"custom\",\n    \"width\": 1080,\n    \"height\": {{ $json.tipo === 'post' ? 1080 : 1920 }}\n  },\n  \"title\": \"{{ $json.titulo }}\",\n  \"asset_id\": \"{{ $json.job.asset.id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0],
+      "name": "Canva: Create Design",
+      "credentials": {
+        "oAuth2Api": { "id": "TU_CREDENTIAL_ID", "name": "CANVA API" }
+      }
+    }
+  ],
+  "connections": {
+    "Canva: Upload Asset Job": {
+      "main": [[{ "node": "Canva: Poll Upload Job", "type": "main", "index": 0 }]]
+    },
+    "Canva: Poll Upload Job": {
+      "main": [[{ "node": "Canva: Create Design", "type": "main", "index": 0 }]]
+    }
+  }
+}

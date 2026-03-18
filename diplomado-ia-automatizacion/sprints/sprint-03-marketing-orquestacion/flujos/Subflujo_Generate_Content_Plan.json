@@ -1,0 +1,636 @@
+{
+  "updatedAt": "2026-02-21T10:00:12.655Z",
+  "createdAt": "2026-02-07T00:56:36.976Z",
+  "id": "tz6Eog24d8AoaHjl5jLzf",
+  "name": "Subflujo: Generate Content Plan",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const brief = $input.first().json.brief;\n\n// Normaliza mix para evitar undefined y strings raros\nconst mix = brief.mix_contenido ?? {};\nconst posts_imagen = Number(mix.posts_imagen ?? 0);\nconst stories = Number(mix.stories ?? 0);\nconst reels = Number(mix.reels ?? 0);\nconst total = posts_imagen + stories + reels;\n// Si quieres forzar consistencia:\nbrief.cantidad_piezas = total;\n\nconst systemPrompt = `Eres el Director de Contenido para Cafetería Nube.\n\nCONTEXTO DE MARCA:\n- Tono: cálido, cercano, auténtico\n- Audiencia: jóvenes profesionales 25-40 años\n- Ubicación: Aguascalientes, México\n- Valores: calidad, comunidad local, experiencia artesanal\n\nTAREA:\nGenera ${Number(brief.cantidad_piezas ?? (posts_imagen + stories + reels))} ideas de contenido para la semana ${brief.semana_iso}.\n\nBRIEF:\n- Objetivo: ${brief.objetivo_semana}\n- Promos/Eventos: ${JSON.stringify(brief.promos_eventos || [])}\n- Mix solicitado: ${JSON.stringify({ posts_imagen, stories, reels })}\n\nREGLAS DE SALIDA (CRÍTICO):\n1) Responde SOLO con UN JSON OBJECT válido, sin texto extra, sin markdown, sin comentarios:\n   {\n     \"ideas\": [ ... ]\n   }\n\n2) \"ideas\" debe contener EXACTAMENTE ${posts_imagen + stories + reels} elementos, distribuidos así:\n   - post (imagen): ${posts_imagen}\n   - story (imagen): ${stories}\n   - reel (video): ${reels}\n\n3) Cada idea debe incluir EXACTAMENTE estas llaves:\n   - id: formato NUBE-YYYYMMDD-TYPE-NN\n   - fecha_objetivo: YYYY-MM-DD (dentro de la semana ${brief.semana_iso})\n   - tipo: \"post\" | \"story\" | \"reel\"\n   - asset_type: \"image\" | \"video\"\n   - objetivo: string (si no aplica, \"comunidad\")\n   - titulo: string\n   - idea: string\n   - estilo_visual: string (si no aplica, \"lifestyle, luz natural\")\n   - prompt_imagen: string\n   - caption: string\n   - script_video: string\n\n4) Reglas de consistencia:\n   - Si tipo = \"reel\" => asset_type = \"video\", prompt_imagen = \"\", script_video = (texto que dirá el avatar)\n   - Si tipo = \"post\" o \"story\" => asset_type = \"image\", script_video = \"\"\n   - Para prompt_imagen (solo image):\n     \"fotografía lifestyle, luz natural suave, composición centrada, colores cálidos y terrosos, fondo minimalista, SIN texto, SIN logos\"\n   - Para script_video (solo reel):\n     Texto HABLADO que un avatar dirá en primera persona. Tono conversacional, directo, cálido. 50-200 palabras.\n     NO es descripción visual. NO usar \"muestra\", \"enfoca\", \"decoración\".\n     SÍ usar \"te esperamos\", \"disfruta\", \"visítanos\", \"nuestro café\", \"este [fecha]\".\n     Ejemplo: \"Este 14 de febrero celebra el amor en Cafetería Nube. Te esperamos con café artesanal y un ambiente perfecto para tu cita especial.\"\n\n5) JSON debe parsear. No comas finales. No llaves extra.\n\nResponde SOLO con el JSON object { \"ideas\": [...] }.`;\n\nreturn {\n  json: {\n    systemPrompt,\n    brief,\n  },\n};\n"
+      },
+      "id": "8ba9bb3e-04e4-40c5-a4ec-04fdd5e6c71b",
+      "name": "Code: Prepare System Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1632,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.systemPrompt }}",
+              "role": "system"
+            },
+            {
+              "content": "=Genera el plan de contenido siguiendo las instrucciones. Responde SOLO con el JSON object {\"ideas\": [...]}."
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "e3cc103c-1326-4b45-a141-fbdf797c3797",
+      "name": "OpenAI Chat: Generate Plan",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.5,
+      "position": [
+        -1408,
+        96
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\n// En este nodo OpenAI, normalmente viene así:\nlet content = data.message?.content ?? data.output ?? data.text ?? data;\n\n// Si viene como string JSON, parsea:\nif (typeof content === \"string\") {\n  content = JSON.parse(content);\n}\n\n// Esperamos { ideas: [...] }\nconst ideas = content?.ideas;\n\nif (!Array.isArray(ideas)) {\n  throw new Error(\"La salida del modelo no trae un array en content.ideas. Revisa que responda {\\\"ideas\\\": [...]}.\");\n}\n\nconst now = new Date().toISOString();\n\nreturn ideas.map((idea) => {\n  const tipo = idea.tipo;\n  const asset_type =\n    idea.asset_type ?? (tipo === \"reel\" ? \"video\" : \"image\");\n\n  return {\n    json: {\n      id: idea.id,\n      fecha_objetivo: idea.fecha_objetivo,\n      tipo,\n      objetivo: idea.objetivo || \"comunidad\",\n      titulo: idea.titulo,\n      idea: idea.idea,\n      tono: \"cálido, cercano\",\n      estilo_visual: idea.estilo_visual || \"lifestyle, luz natural\",\n      prompt_imagen: idea.prompt_imagen || \"\",\n      caption: idea.caption || \"\",\n      status: \"pending\",\n      image_url: \"\",\n      canva_export_url: \"\",\n      error_message: \"\",\n      created_at: now,\n      updated_at: now,\n      asset_type,\n      aspect_ratio: tipo === \"post\" ? \"1:1\" : \"9:16\",\n      duration_seconds: tipo === \"reel\" ? 15 : 0,\n      script_video: idea.script_video || \"\",\n      heygen_video_id: \"\",\n      heygen_video_url: \"\",\n      drive_file_url: \"\",\n      final_asset_url: \"\",\n      step: \"plan\",\n    },\n  };\n});\n"
+      },
+      "id": "b32e8ce9-f98c-4112-a7bc-08554682b4f4",
+      "name": "Code: Parse and Structure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "brief",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1856,
+        96
+      ],
+      "id": "9be66a4e-4d69-475e-87a0-cc2e6feca1a2",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "batchSize": 100,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -832,
+        96
+      ],
+      "id": "1d4ebe10-6829-4566-811f-12ca62c7240f",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "mRaD5EgTTFLKGo6D0R82h",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/mRaD5EgTTFLKGo6D0R82h",
+          "cachedResultName": "Subflujo: Update Sheet"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "updates": "={{ { \n    fecha_objetivo: $json.fecha_objetivo || '',\n    tipo: $json.tipo || '',\n    objetivo: $json.objetivo || '',\n    titulo: $json.titulo || '',\n    idea: $json.idea || '',\n    tono: $json.tono || '',\n    estilo_visual: $json.estilo_visual || '',\n    prompt_imagen: $json.prompt_imagen || '',\n    caption: $json.caption || '',\n    status: 'pending',\n    asset_type: $json.asset_type || '',\n    aspect_ratio: $json.aspect_ratio || '',\n    duracion_sec: $json.duracion_sec || '',\n    script_video: $json.script_video || '',\n    step: 'plan',\n    created_at: $now.toISO(),\n    updated_at: $now.toISO()\n  } }}",
+            "id": "={{ $json.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "updates",
+              "displayName": "updates",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -592,
+        160
+      ],
+      "id": "23ede1f0-8f43-4b3f-bfa3-83779d21ab1c",
+      "name": "Call 'Subflujo: Update Sheet'"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El workflow principal usa Split In Batches\n// Necesita recibir múltiples items, no un array anidado\n// Simplemente pasar todos los items tal cual\nreturn $('Code: Parse and Structure').all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        -48
+      ],
+      "id": "dcbb780f-8f3b-41f7-8f2f-a4887c7e5524",
+      "name": "Code: Pass Through Items"
+    }
+  ],
+  "connections": {
+    "Code: Prepare System Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Chat: Generate Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat: Generate Plan": {
+      "main": [
+        [
+          {
+            "node": "Code: Parse and Structure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Parse and Structure": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Code: Pass Through Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 'Subflujo: Update Sheet'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Subflujo: Update Sheet'": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "brief": {
+            "semana_iso": "2026-W07",
+            "cantidad_piezas": 7,
+            "duracion_sec": 10,
+            "objetivo_semana": "Promocionar café de temporada",
+            "promos_eventos": [
+              {
+                "fecha": "2026-02-14",
+                "promo": "San Valentin"
+              },
+              {
+                "fecha": "2026-02-11",
+                "promo": "2x1 en pan artesanal"
+              }
+            ],
+            "mix_contenido": {
+              "posts_imagen": 3,
+              "stories": 2,
+              "reels": 2,
+              "carruseles": 0
+            },
+            "ig_user_id": "",
+            "drive_folder_id": "",
+            "publish_to_instagram": true
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "da50e11b-9be3-48a1-bb8f-76f607c4b6d0",
+  "activeVersionId": "da50e11b-9be3-48a1-bb8f-76f607c4b6d0",
+  "versionCounter": 266,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-02-07T00:56:37.364Z",
+      "createdAt": "2026-02-07T00:56:37.364Z",
+      "role": "workflow:owner",
+      "workflowId": "tz6Eog24d8AoaHjl5jLzf",
+      "projectId": "CWeoufmVNbk5HdAe",
+      "project": {
+        "updatedAt": "2026-01-14T20:52:44.984Z",
+        "createdAt": "2026-01-12T13:49:29.787Z",
+        "id": "CWeoufmVNbk5HdAe",
+        "name": "Tu Nombre <tu@email.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-12T13:49:29.788Z",
+            "createdAt": "2026-01-12T13:49:29.788Z",
+            "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+            "projectId": "CWeoufmVNbk5HdAe",
+            "user": {
+              "updatedAt": "2026-02-21T09:56:48.000Z",
+              "createdAt": "2026-01-12T13:49:29.148Z",
+              "id": "4c3a3aa3-6465-484e-b5ab-09e580d57314",
+              "email": "tu@email.com",
+              "firstName": "Rodrigo",
+              "lastName": "Leanos",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-14T20:53:27.446Z",
+                "personalization_survey_n8n_version": "2.2.6",
+                "automationGoalDevops": [
+                  "data-syncing",
+                  "cloud-infrastructure-orchestration",
+                  "ci-cd"
+                ],
+                "companySize": "<20",
+                "companyType": "saas",
+                "role": "it",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "NZ9pvnwg7NiRdxeq",
+                "userActivatedAt": 1768644248841,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1770158638059
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-21",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-02-19T15:46:55.000Z",
+    "createdAt": "2026-02-12T23:40:46.666Z",
+    "versionId": "da50e11b-9be3-48a1-bb8f-76f607c4b6d0",
+    "workflowId": "tz6Eog24d8AoaHjl5jLzf",
+    "nodes": [
+      {
+        "parameters": {
+          "jsCode": "const brief = $input.first().json.brief;\n\n// Normaliza mix para evitar undefined y strings raros\nconst mix = brief.mix_contenido ?? {};\nconst posts_imagen = Number(mix.posts_imagen ?? 0);\nconst stories = Number(mix.stories ?? 0);\nconst reels = Number(mix.reels ?? 0);\nconst total = posts_imagen + stories + reels;\n// Si quieres forzar consistencia:\nbrief.cantidad_piezas = total;\n\nconst systemPrompt = `Eres el Director de Contenido para Cafetería Nube.\n\nCONTEXTO DE MARCA:\n- Tono: cálido, cercano, auténtico\n- Audiencia: jóvenes profesionales 25-40 años\n- Ubicación: Aguascalientes, México\n- Valores: calidad, comunidad local, experiencia artesanal\n\nTAREA:\nGenera ${Number(brief.cantidad_piezas ?? (posts_imagen + stories + reels))} ideas de contenido para la semana ${brief.semana_iso}.\n\nBRIEF:\n- Objetivo: ${brief.objetivo_semana}\n- Promos/Eventos: ${JSON.stringify(brief.promos_eventos || [])}\n- Mix solicitado: ${JSON.stringify({ posts_imagen, stories, reels })}\n\nREGLAS DE SALIDA (CRÍTICO):\n1) Responde SOLO con UN JSON OBJECT válido, sin texto extra, sin markdown, sin comentarios:\n   {\n     \"ideas\": [ ... ]\n   }\n\n2) \"ideas\" debe contener EXACTAMENTE ${posts_imagen + stories + reels} elementos, distribuidos así:\n   - post (imagen): ${posts_imagen}\n   - story (imagen): ${stories}\n   - reel (video): ${reels}\n\n3) Cada idea debe incluir EXACTAMENTE estas llaves:\n   - id: formato NUBE-YYYYMMDD-TYPE-NN\n   - fecha_objetivo: YYYY-MM-DD (dentro de la semana ${brief.semana_iso})\n   - tipo: \"post\" | \"story\" | \"reel\"\n   - asset_type: \"image\" | \"video\"\n   - objetivo: string (si no aplica, \"comunidad\")\n   - titulo: string\n   - idea: string\n   - estilo_visual: string (si no aplica, \"lifestyle, luz natural\")\n   - prompt_imagen: string\n   - caption: string\n   - script_video: string\n\n4) Reglas de consistencia:\n   - Si tipo = \"reel\" => asset_type = \"video\", prompt_imagen = \"\", script_video = (texto que dirá el avatar)\n   - Si tipo = \"post\" o \"story\" => asset_type = \"image\", script_video = \"\"\n   - Para prompt_imagen (solo image):\n     \"fotografía lifestyle, luz natural suave, composición centrada, colores cálidos y terrosos, fondo minimalista, SIN texto, SIN logos\"\n   - Para script_video (solo reel):\n     Texto HABLADO que un avatar dirá en primera persona. Tono conversacional, directo, cálido. 50-200 palabras.\n     NO es descripción visual. NO usar \"muestra\", \"enfoca\", \"decoración\".\n     SÍ usar \"te esperamos\", \"disfruta\", \"visítanos\", \"nuestro café\", \"este [fecha]\".\n     Ejemplo: \"Este 14 de febrero celebra el amor en Cafetería Nube. Te esperamos con café artesanal y un ambiente perfecto para tu cita especial.\"\n\n5) JSON debe parsear. No comas finales. No llaves extra.\n\nResponde SOLO con el JSON object { \"ideas\": [...] }.`;\n\nreturn {\n  json: {\n    systemPrompt,\n    brief,\n  },\n};\n"
+        },
+        "id": "8ba9bb3e-04e4-40c5-a4ec-04fdd5e6c71b",
+        "name": "Code: Prepare System Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1632,
+          96
+        ]
+      },
+      {
+        "parameters": {
+          "modelId": {
+            "__rl": true,
+            "value": "gpt-4o-mini",
+            "mode": "list",
+            "cachedResultName": "GPT-4O-MINI"
+          },
+          "messages": {
+            "values": [
+              {
+                "content": "={{ $json.systemPrompt }}",
+                "role": "system"
+              },
+              {
+                "content": "=Genera el plan de contenido siguiendo las instrucciones. Responde SOLO con el JSON object {\"ideas\": [...]}."
+              }
+            ]
+          },
+          "jsonOutput": true,
+          "options": {}
+        },
+        "id": "e3cc103c-1326-4b45-a141-fbdf797c3797",
+        "name": "OpenAI Chat: Generate Plan",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 1.5,
+        "position": [
+          -1408,
+          96
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "TU_CREDENTIAL_ID",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const data = $input.first().json;\n\n// En este nodo OpenAI, normalmente viene así:\nlet content = data.message?.content ?? data.output ?? data.text ?? data;\n\n// Si viene como string JSON, parsea:\nif (typeof content === \"string\") {\n  content = JSON.parse(content);\n}\n\n// Esperamos { ideas: [...] }\nconst ideas = content?.ideas;\n\nif (!Array.isArray(ideas)) {\n  throw new Error(\"La salida del modelo no trae un array en content.ideas. Revisa que responda {\\\"ideas\\\": [...]}.\");\n}\n\nconst now = new Date().toISOString();\n\nreturn ideas.map((idea) => {\n  const tipo = idea.tipo;\n  const asset_type =\n    idea.asset_type ?? (tipo === \"reel\" ? \"video\" : \"image\");\n\n  return {\n    json: {\n      id: idea.id,\n      fecha_objetivo: idea.fecha_objetivo,\n      tipo,\n      objetivo: idea.objetivo || \"comunidad\",\n      titulo: idea.titulo,\n      idea: idea.idea,\n      tono: \"cálido, cercano\",\n      estilo_visual: idea.estilo_visual || \"lifestyle, luz natural\",\n      prompt_imagen: idea.prompt_imagen || \"\",\n      caption: idea.caption || \"\",\n      status: \"pending\",\n      image_url: \"\",\n      canva_export_url: \"\",\n      error_message: \"\",\n      created_at: now,\n      updated_at: now,\n      asset_type,\n      aspect_ratio: tipo === \"post\" ? \"1:1\" : \"9:16\",\n      duration_seconds: tipo === \"reel\" ? 15 : 0,\n      script_video: idea.script_video || \"\",\n      heygen_video_id: \"\",\n      heygen_video_url: \"\",\n      drive_file_url: \"\",\n      final_asset_url: \"\",\n      step: \"plan\",\n    },\n  };\n});\n"
+        },
+        "id": "b32e8ce9-f98c-4112-a7bc-08554682b4f4",
+        "name": "Code: Parse and Structure",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1056,
+          96
+        ]
+      },
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "brief",
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -1856,
+          96
+        ],
+        "id": "9be66a4e-4d69-475e-87a0-cc2e6feca1a2",
+        "name": "When Executed by Another Workflow"
+      },
+      {
+        "parameters": {
+          "batchSize": 100,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          -832,
+          96
+        ],
+        "id": "1d4ebe10-6829-4566-811f-12ca62c7240f",
+        "name": "Loop Over Items"
+      },
+      {
+        "parameters": {
+          "workflowId": {
+            "__rl": true,
+            "value": "mRaD5EgTTFLKGo6D0R82h",
+            "mode": "list",
+            "cachedResultUrl": "/workflow/mRaD5EgTTFLKGo6D0R82h",
+            "cachedResultName": "Subflujo: Update Sheet"
+          },
+          "workflowInputs": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "updates": "={{ { \n    fecha_objetivo: $json.fecha_objetivo || '',\n    tipo: $json.tipo || '',\n    objetivo: $json.objetivo || '',\n    titulo: $json.titulo || '',\n    idea: $json.idea || '',\n    tono: $json.tono || '',\n    estilo_visual: $json.estilo_visual || '',\n    prompt_imagen: $json.prompt_imagen || '',\n    caption: $json.caption || '',\n    status: 'pending',\n    asset_type: $json.asset_type || '',\n    aspect_ratio: $json.aspect_ratio || '',\n    duracion_sec: $json.duracion_sec || '',\n    script_video: $json.script_video || '',\n    step: 'plan',\n    created_at: $now.toISO(),\n    updated_at: $now.toISO()\n  } }}",
+              "id": "={{ $json.id }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "string",
+                "removed": false
+              },
+              {
+                "id": "updates",
+                "displayName": "updates",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "canBeUsedToMatch": true,
+                "type": "object",
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": true
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.executeWorkflow",
+        "typeVersion": 1.3,
+        "position": [
+          -592,
+          160
+        ],
+        "id": "23ede1f0-8f43-4b3f-bfa3-83779d21ab1c",
+        "name": "Call 'Subflujo: Update Sheet'"
+      },
+      {
+        "parameters": {
+          "jsCode": "// El workflow principal usa Split In Batches\n// Necesita recibir múltiples items, no un array anidado\n// Simplemente pasar todos los items tal cual\nreturn $('Code: Parse and Structure').all();"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -608,
+          -48
+        ],
+        "id": "dcbb780f-8f3b-41f7-8f2f-a4887c7e5524",
+        "name": "Code: Pass Through Items"
+      }
+    ],
+    "connections": {
+      "Code: Prepare System Prompt": {
+        "main": [
+          [
+            {
+              "node": "OpenAI Chat: Generate Plan",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat: Generate Plan": {
+        "main": [
+          [
+            {
+              "node": "Code: Parse and Structure",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Code: Prepare System Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code: Parse and Structure": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Over Items": {
+        "main": [
+          [
+            {
+              "node": "Code: Pass Through Items",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Call 'Subflujo: Update Sheet'",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Call 'Subflujo: Update Sheet'": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Tu Nombre",
+    "name": "Version da50e11b",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-19T15:46:55.425Z",
+        "id": 99,
+        "workflowId": "tz6Eog24d8AoaHjl5jLzf",
+        "versionId": "da50e11b-9be3-48a1-bb8f-76f607c4b6d0",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      },
+      {
+        "createdAt": "2026-02-21T10:00:12.696Z",
+        "id": 108,
+        "workflowId": "tz6Eog24d8AoaHjl5jLzf",
+        "versionId": "da50e11b-9be3-48a1-bb8f-76f607c4b6d0",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      },
+      {
+        "createdAt": "2026-02-21T10:00:13.668Z",
+        "id": 109,
+        "workflowId": "tz6Eog24d8AoaHjl5jLzf",
+        "versionId": "da50e11b-9be3-48a1-bb8f-76f607c4b6d0",
+        "event": "activated",
+        "userId": "4c3a3aa3-6465-484e-b5ab-09e580d57314"
+      }
+    ]
+  }
+}

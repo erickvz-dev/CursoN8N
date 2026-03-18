@@ -1,0 +1,881 @@
+{
+  "name": "Asistente Telegram con Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "1) Entrada por Telegram\n- Este workflow escucha mensajes entrantes del bot (update: `message`).\n- Del trigger salen: `message.text`, `message.voice` y metadatos del chat/usuario.\n- Todo inicia aquí.",
+        "height": 394,
+        "width": 204
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        -144
+      ],
+      "id": "f3d21b2d-c1e1-4dab-9093-aa9adf74c644",
+      "name": "🟨 Nota 1 - Entrada"
+    },
+    {
+      "parameters": {
+        "content": "2) ¿Voz o texto?\n- IF valida si existe `message.voice`.\n- TRUE: ruta de voz (descarga audio → transcripción → normalización).\n- FALSE: ruta de texto (normalización directa).\n- Objetivo: ambas rutas terminan en `{ userMessage, chatId, userName }`.",
+        "height": 344,
+        "width": 184
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        -224
+      ],
+      "id": "f686ce4e-b154-48a7-ab16-492a9009073c",
+      "name": "🟨 Nota 2 - Voz vs Texto"
+    },
+    {
+      "parameters": {
+        "content": "Feedback inmediato (solo voz)\n- Este mensaje se envía SOLO en la rama TRUE (voz).\n- Mejora UX: el usuario siente que el bot ya está trabajando.\n- `appendAttribution: false` para mantenerlo limpio.",
+        "height": 352,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        -576
+      ],
+      "id": "c701f973-81eb-4874-9479-543a315081f9",
+      "name": "🟨 Nota 3 - Escuchando"
+    },
+    {
+      "parameters": {
+        "content": "3) Obtener archivo de voz\n- Descarga el audio usando `message.voice.file_id`.\n- Salida: binario de audio para transcribir.\n- Si falla: credenciales Telegram / expiración del file_id / permisos del bot.",
+        "height": 340,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1728,
+        144
+      ],
+      "id": "80bd2c03-2656-4aa1-9337-e1b1fb0b26a4",
+      "name": "🟨 Nota 4 - Descargar voz"
+    },
+    {
+      "parameters": {
+        "content": "4) Whisper (voz → texto)\n- Convierte el audio a texto (operation: `transcribe`).\n- Output clave: `text`.\n- A partir de aquí la voz se trata igual que un mensaje escrito.",
+        "height": 272,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        -304
+      ],
+      "id": "b78d4a81-bd3f-41b8-a730-d11b519028ab",
+      "name": "🟨 Nota 5 - Whisper"
+    },
+    {
+      "parameters": {
+        "content": "5) Preparar Voz (Set)\n- Normaliza a formato estándar:\n  - `userMessage` = transcripción (`$json.text`)\n  - `chatId` y `userName` desde `Telegram Trigger` (consistencia)\n- Resultado: input listo para el agente.",
+        "height": 430,
+        "width": 152
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        -448
+      ],
+      "id": "b8fc7c6f-7f1a-49ce-b751-b882428b40ec",
+      "name": "🟨 Nota 6 - Normalizar Voz"
+    },
+    {
+      "parameters": {
+        "content": "5) Preparar Texto (Set)\n- Normaliza cuando llega texto:\n  - `userMessage` = `message.text`\n  - `chatId` = `message.chat.id`\n  - `userName` = `message.chat.first_name`\n- Debe ser 1:1 compatible con “Preparar Voz”.",
+        "height": 414,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2032,
+        256
+      ],
+      "id": "5906e25d-a9d2-4a35-adbb-64fe0511667f",
+      "name": "🟨 Nota 7 - Normalizar Texto"
+    },
+    {
+      "parameters": {
+        "content": "6) AI Agent (interpretación + decisiones)\n- Recibe `userMessage`.\n- Inyecta fecha/hora actual + zona horaria `America/Mexico_City`.\n- Interpreta lenguaje natural: “mañana”, “viernes”, “8pm”, etc.\n- Regla: si faltan fecha/hora para recordatorio/evento, PREGUNTA antes de usar tools.",
+        "height": 150,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2560,
+        -80
+      ],
+      "id": "953557a4-6bab-46e8-8dee-9d798c5abe41",
+      "name": "🟨 Nota 8 - AI Agent"
+    },
+    {
+      "parameters": {
+        "content": "Memoria (contexto)\n- MemoryBufferWindow mantiene contexto corto.\n- `sessionKey = chatId` para separar conversaciones.\n- Permite follow-ups:\n  - “sí, a las 8pm”\n  - “mejor mañana”\n  - “agéndalo de 1 hora”",
+        "height": 398,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2368,
+        672
+      ],
+      "id": "5acad65d-7808-4281-8d48-48c7f43ad050",
+      "name": "🟨 Nota 9 - Memoria"
+    },
+    {
+      "parameters": {
+        "content": "Modelo LLM\n- `gpt-4o-mini` como motor del agente.\n- Balance costo/velocidad para Telegram.\n- Si necesitas más precisión: sube de modelo (más costo).",
+        "height": 288,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        576
+      ],
+      "id": "a1c1e1ca-fa7f-431c-9cf8-5988554f675b",
+      "name": "🟨 Nota 10 - Modelo"
+    },
+    {
+      "parameters": {
+        "content": "Tools disponibles (sub-workflows)\n1) `crear_recordatorio(titulo, fecha YYYY-MM-DD, hora HH:mm)`\n2) `crear_evento(titulo, fecha, hora, duracion_minutos opcional)`\n3) `guardar_nota(texto)`\n4) `consultar_agenda(fecha opcional, default hoy)`\nRegla: NO llamar tools si faltan datos requeridos.",
+        "height": 220,
+        "width": 620
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2704,
+        688
+      ],
+      "id": "80069122-dba7-4d4a-b656-11bf554fb955",
+      "name": "🟨 Nota 11 - Tools"
+    },
+    {
+      "parameters": {
+        "content": "7) Enviar Respuesta\n- Envía al chat el `output` del agente.\n- Puede ser:\n  - Pregunta de seguimiento (faltan datos)\n  - Confirmación de acción\n  - Resultado de agenda/notas\n- `appendAttribution: false` para mensajes limpios.",
+        "height": 398,
+        "width": 184
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3216,
+        16
+      ],
+      "id": "bb41f8ea-0b88-405b-bcb0-f535c29c56ed",
+      "name": "🟨 Nota 12 - Respuesta"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        80
+      ],
+      "id": "f972c039-1722-4b2e-895e-f6e9229f696c",
+      "name": "Telegram Trigger",
+      "webhookId": "assistant-webhook-id",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-voice",
+              "leftValue": "={{ $json.message.voice }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1536,
+        80
+      ],
+      "id": "8d0a5c3b-d612-4274-82dc-82ffae5a1edc",
+      "name": "¿Es voz?"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        -16
+      ],
+      "id": "fe76f62f-9c07-49d1-8cdf-c00c6b677ee2",
+      "name": "Obtener voz",
+      "webhookId": "adef81d3-350e-4867-ae79-28afb07a8ec7",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        1984,
+        -16
+      ],
+      "id": "7091860b-c6e7-4394-bcd1-68f10ccf1965",
+      "name": "Whisper",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-message",
+              "name": "userMessage",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name",
+              "name": "userName",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2208,
+        -16
+      ],
+      "id": "8e8420a3-2289-4ae2-9d27-a6ddd043b252",
+      "name": "Preparar Voz"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-message-text",
+              "name": "userMessage",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id-text",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name-text",
+              "name": "userName",
+              "value": "={{ $json.message.chat.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2208,
+        176
+      ],
+      "id": "da8e0669-eee4-44a7-9ced-5df1ccbabb03",
+      "name": "Preparar Texto"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userMessage }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Eres un asistente personal en Telegram que ayuda con recordatorios, eventos y notas.\n\nFecha actual: {{ $now.toFormat('yyyy-MM-dd') }}\nHora actual: {{ $now.toFormat('HH:mm') }}\nZona horaria: America/Mexico_City\n\nUsuario: {{ $json.userName }}\n\nINSTRUCCIONES:\n- Interpreta fechas: \"mañana\" = {{ $now.plus({days:1}).toFormat('yyyy-MM-dd') }}, \"viernes\" = próximo viernes\n- Interpreta horas: \"8pm\" = \"20:00\", \"8\" = \"08:00\"\n- Sé conciso y amigable\n- Si falta información (fecha/hora), pregúntala ANTES de usar las tools\n- Usa las tools solo cuando tengas TODOS los datos requeridos\n\nTOOLS DISPONIBLES:\n1. crear_recordatorio: para recordatorios puntuales (requiere: titulo, fecha, hora)\n2. crear_evento: para eventos en calendario (requiere: titulo, fecha, hora, duracion opcional)\n3. guardar_nota: para notas sin fecha (requiere: texto)\n4. consultar_agenda: para ver eventos (fecha opcional, default hoy)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        2560,
+        80
+      ],
+      "id": "0565e143-6caf-439a-9ff0-0a7505cdbd1d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3024,
+        80
+      ],
+      "id": "17ab66dd-aaab-4781-9a75-de12c590e273",
+      "name": "Enviar Respuesta",
+      "webhookId": "03fd7603-1588-438f-adf7-33515991e495",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2256,
+        448
+      ],
+      "id": "29be8118-7579-452f-9f34-546b042079fc",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        2416,
+        384
+      ],
+      "id": "34d87466-bcec-4ebb-9afc-d14853c00a2e",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "description": "Crea un recordatorio para el usuario. SOLO úsala cuando tengas título, fecha (YYYY-MM-DD) y hora (HH:mm). Si falta algún dato, pregúntalo primero.",
+        "workflowId": {
+          "__rl": true,
+          "value": "W2lQS3mOy8Xdx7hC",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/W2lQS3mOy8Xdx7hC",
+          "cachedResultName": "Tool - Crear Recordatorio"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+            "titulo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('titulo', ``, 'string') }}",
+            "fecha": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fecha', ``, 'string') }}",
+            "hora": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('hora', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora",
+              "displayName": "hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2528,
+        512
+      ],
+      "id": "82a617b1-5b62-4185-bd01-8a5b20089e7f",
+      "name": "crear_recordatorio"
+    },
+    {
+      "parameters": {
+        "description": "Crea un evento en Google Calendar. Requiere título, fecha, hora. Duración opcional (default 60 minutos).",
+        "workflowId": {
+          "__rl": true,
+          "value": "at840CHMQXWwbVja",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/at840CHMQXWwbVja",
+          "cachedResultName": "Tool - Crear Evento"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "duracion_minutos": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('duracion_minutos', ``, 'number') }}",
+            "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+            "titulo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('titulo', ``, 'string') }}",
+            "fecha": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fecha', ``, 'string') }}",
+            "hora": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('hora', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora",
+              "displayName": "hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "duracion_minutos",
+              "displayName": "duracion_minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2608,
+        384
+      ],
+      "id": "486e6c1b-ac1a-4c16-b4e9-28d9cc260d05",
+      "name": "crear_evento"
+    },
+    {
+      "parameters": {
+        "description": "Guarda una nota de texto. No requiere fecha ni hora.",
+        "workflowId": {
+          "__rl": true,
+          "value": "hTBUJXh727B0Lhjh",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/hTBUJXh727B0Lhjh",
+          "cachedResultName": "Tool - Guardar Nota"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+            "texto": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('texto', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2704,
+        496
+      ],
+      "id": "e670b9d4-8c12-414e-a60a-44314726f1a4",
+      "name": "guardar_nota"
+    },
+    {
+      "parameters": {
+        "description": "Consulta eventos del calendario. Fecha opcional (default: hoy).",
+        "workflowId": {
+          "__rl": true,
+          "value": "NZ9pvnwg7NiRdxeq",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/NZ9pvnwg7NiRdxeq",
+          "cachedResultName": "Tool - Consultar Agenda"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+            "fecha": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fecha', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2848,
+        528
+      ],
+      "id": "863d93ad-508d-4e28-ac8b-b6fd4aef439a",
+      "name": "consultar_agenda"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Escuchando tu mensaje ",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        -224
+      ],
+      "id": "4dd1cb44-ed9b-433a-bc61-f5d85df4399d",
+      "name": "Enviar \"escuchando\"",
+      "webhookId": "a1e31fd9-8825-4e9f-9e34-a605a8fefc45",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "¿Es voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es voz?": {
+      "main": [
+        [
+          {
+            "node": "Obtener voz",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Enviar \"escuchando\"",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener voz": {
+      "main": [
+        [
+          {
+            "node": "Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper": {
+      "main": [
+        [
+          {
+            "node": "Preparar Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Voz": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Texto": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "crear_recordatorio": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "crear_evento": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "guardar_nota": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_agenda": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "fdd208b5-b973-4556-816a-2242af76647e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "9Dt5-jcpXNQrLDfq46FHd",
+  "tags": []
+}

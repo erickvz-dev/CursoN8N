@@ -1,0 +1,32 @@
+# Entornos Node.js y Python comunes en automatizaciones
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Credenciales y secretos locales (si aplican)
+credentials.json
+*.key
+*.pem
+secret*.json
+
+# Archivos del SO y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Exportaciones de n8n o variables locales sensibles (si usas scripts auto-export)
+*local_config.json
+diplomado-ia-automatizacion/shared/mis_credenciales.md
+

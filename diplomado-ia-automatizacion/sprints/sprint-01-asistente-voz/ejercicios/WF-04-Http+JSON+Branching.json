@@ -1,0 +1,165 @@
+{
+  "name": "WF-04-Http+JSON+Branching",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1168,
+        96
+      ],
+      "id": "42b732c1-e127-4d19-a065-8416b6f7d07e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://jsonplaceholder.typicode.com/todos",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -944,
+        96
+      ],
+      "id": "626ec8b8-e4f6-4ca6-b336-ec20138156ec",
+      "name": "Petición de tareas"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f3064246-807a-4b20-bb10-4855b3dde044",
+              "leftValue": "={{ $json.completed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -720,
+        96
+      ],
+      "id": "c4827f97-6a04-4d59-b85d-499d27c6f179",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea7b06fd-9c78-477f-ba14-a0d02b272ba5",
+              "name": "tareas",
+              "value": "={{ $json.id }} {{ $input.all().length }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -496,
+        0
+      ],
+      "id": "05941e67-7f05-477b-9a15-311b6ef189ce",
+      "name": "Procesar tareas completadas"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0de71ca-194a-4a7e-8a78-f99db012637f",
+              "name": "pendientes",
+              "value": "={{$input.all().length}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -496,
+        192
+      ],
+      "id": "67b167f7-70d6-4206-b4d2-9b906c183c5f",
+      "name": "Procesar tareas pendientes"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Petición de tareas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Petición de tareas": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Procesar tareas completadas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Procesar tareas pendientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "91911f5c-56c4-4d95-bec8-b12e7b17029c",
+  "meta": {
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "YYlA0sWpW4oMvNqpQT1yS",
+  "tags": []
+}

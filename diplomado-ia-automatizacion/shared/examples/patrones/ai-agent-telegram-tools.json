@@ -1,0 +1,383 @@
+{
+  "_meta": {
+    "descripcion": "AI Agent para Telegram: recibe mensaje de voz o texto → transcribe con Whisper si es voz → AI Agent (GPT-4o-mini + Window Buffer Memory + toolWorkflow placeholder) → envía respuesta",
+    "sprint_origen": "Sprint 01",
+    "nodos": 11,
+    "uso": "Punto de partida para asistentes conversacionales en Telegram con tools como sub-workflows. Reemplazar workflowId del toolWorkflow con el ID real."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "name": "01 - Telegram Trigger",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-voice",
+              "leftValue": "={{ $json.message.voice }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [300, 0],
+      "name": "02 - IF ¿Es Voz?"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [600, -160],
+      "name": "03 - Telegram Get File",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [900, -160],
+      "name": "04 - OpenAI Whisper",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-message",
+              "name": "userMessage",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $('01 - Telegram Trigger').item.json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name",
+              "name": "userName",
+              "value": "={{ $('01 - Telegram Trigger').item.json.message.chat.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1200, -160],
+      "name": "05 - Set: Preparar Voz"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-message-text",
+              "name": "userMessage",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id-text",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name-text",
+              "name": "userName",
+              "value": "={{ $json.message.chat.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [600, 160],
+      "name": "06 - Set: Preparar Texto"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userMessage }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "[INSERTAR SYSTEM PROMPT AQUÍ]\n\nEjemplo:\nEres un asistente personal en Telegram.\nFecha actual: {{ $now.toFormat('yyyy-MM-dd') }}\nHora actual: {{ $now.toFormat('HH:mm') }}\nZona horaria: America/Mexico_City\nUsuario: {{ $json.userName }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1500, 0],
+      "name": "07 - AI Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('01 - Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1800, 0],
+      "name": "08 - Telegram Send Response",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1200, 320],
+      "name": "09 - OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1500, 320],
+      "name": "10 - Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "description": "REEMPLAZAR: Descripción de qué hace esta tool. Indicar qué parámetros requiere.",
+        "workflowId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_CON_ID_REAL",
+          "mode": "list",
+          "cachedResultName": "Tool - REEMPLAZAR_CON_NOMBRE_REAL"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatId": "={{ $('01 - Telegram Trigger').item.json.message.chat.id }}",
+            "parametro_ejemplo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parametro_ejemplo', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chatId",
+              "displayName": "chatId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "parametro_ejemplo",
+              "displayName": "parametro_ejemplo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [1800, 320],
+      "name": "11 - toolWorkflow placeholder"
+    }
+  ],
+  "connections": {
+    "01 - Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "02 - IF ¿Es Voz?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "02 - IF ¿Es Voz?": {
+      "main": [
+        [
+          {
+            "node": "03 - Telegram Get File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "06 - Set: Preparar Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "03 - Telegram Get File": {
+      "main": [
+        [
+          {
+            "node": "04 - OpenAI Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "04 - OpenAI Whisper": {
+      "main": [
+        [
+          {
+            "node": "05 - Set: Preparar Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "05 - Set: Preparar Voz": {
+      "main": [
+        [
+          {
+            "node": "07 - AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "06 - Set: Preparar Texto": {
+      "main": [
+        [
+          {
+            "node": "07 - AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "07 - AI Agent": {
+      "main": [
+        [
+          {
+            "node": "08 - Telegram Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "09 - OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "07 - AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10 - Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "07 - AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11 - toolWorkflow placeholder": {
+      "ai_tool": [
+        [
+          {
+            "node": "07 - AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,1935 @@
+{
+  "name": "Asistente Telegram Sin Agente",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -3408,
+        3040
+      ],
+      "id": "4be8b7d4-6ce3-4a86-917c-b13531c8078b",
+      "name": "Telegram Trigger",
+      "webhookId": "assistant-webhook-id",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-voice",
+              "leftValue": "={{ $json.message.voice }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3184,
+        3040
+      ],
+      "id": "bd77acf8-ef97-4ffe-84fe-49ea5391d45c",
+      "name": "¿Es voz o texto?"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2960,
+        3040
+      ],
+      "id": "9ff21d8b-90b8-4d34-8e96-ec34dfb0131c",
+      "name": "Obtener voz",
+      "webhookId": "a91fd479-eef0-41ad-a20a-572fd28bad44",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "🎧 Escuchando tu mensaje...",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2960,
+        2848
+      ],
+      "id": "c709ba56-739f-4111-9808-bad59aec4d1e",
+      "name": "Mensaje 'Escuchando'",
+      "webhookId": "5381f4c0-957b-43b4-b200-b1a4dbae051b",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -2736,
+        3040
+      ],
+      "id": "fa55af25-7c3e-4a8a-a6b9-64fe3d35e895",
+      "name": "Whisper",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-text",
+              "name": "userText",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name",
+              "name": "userName",
+              "value": "={{ $json.message.chat.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2512,
+        3232
+      ],
+      "id": "cbfed95b-7948-4b02-b343-26beeb83a727",
+      "name": "Normalizar Texto"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-text-voice",
+              "name": "userText",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id-voice",
+              "name": "chatId",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name-voice",
+              "name": "userName",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2512,
+        3040
+      ],
+      "id": "2f1510e9-eb3d-4b4e-a6ea-c93059335bd2",
+      "name": "Normalizar Voz"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-text-unified",
+              "name": "userText",
+              "value": "={{ $json.userText }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id-unified",
+              "name": "chatId",
+              "value": "={{ $json.chatId }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name-unified",
+              "name": "userName",
+              "value": "={{ $json.userName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2288,
+        3136
+      ],
+      "id": "97847f28-1f2b-4b77-864c-44cacbe16cf3",
+      "name": "Unificar Datos"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "MemoriaAsistenteIA"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "memoria"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "chatId",
+              "lookupValue": "={{ $json.chatId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -2048,
+        3136
+      ],
+      "id": "742fc072-b622-4a27-b5d0-7c71114fa6a2",
+      "name": "Buscar Estado Pendiente",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1998941e-da0c-407a-8784-25f23c38d533",
+              "leftValue": "={{ $json }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1776,
+        3136
+      ],
+      "id": "77fc8347-5024-4e0d-a891-bf51cff370c5",
+      "name": "¿Tiene Estado?"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4o Mini"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Completa los campos faltantes.\n\nEstado actual:\n- Título: {{ $('Buscar Estado Pendiente').item.json.title }}\n- Fecha: {{ $('Buscar Estado Pendiente').item.json.date || 'FALTA' }}\n- Hora: {{ $('Buscar Estado Pendiente').item.json.time || 'FALTA' }}\n\nRespuesta: \"{{ $('Unificar Datos').item.json.userText }}\"\n\nInterpreta:\n- \"mañana\" → {{ $now.plus({days:1}).toFormat('yyyy-MM-dd') }}\n- \"8pm\" → \"20:00\"\n\nJSON:\n{\n  \"date\": \"YYYY-MM-DD\" o null,\n  \"time\": \"HH:mm\" o null,\n  \"durationMin\": número o null\n}"
+            },
+            {
+              "content": "={{ $('Unificar Datos').item.json.userText }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -1408,
+        3040
+      ],
+      "id": "7a7c61ad-858f-4028-aee0-1156cc0ac621",
+      "name": "Completar Campos",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "merge-intent",
+              "name": "intent",
+              "value": "={{ $('Buscar Estado Pendiente').item.json.intent }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-title",
+              "name": "title",
+              "value": "={{ $('Buscar Estado Pendiente').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-text",
+              "name": "text",
+              "value": "={{ $('Buscar Estado Pendiente').item.json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-date",
+              "name": "date",
+              "value": "={{ JSON.parse($json.output[0].content[0].text).date || $('Buscar Estado Pendiente').item.json.date }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-time",
+              "name": "time",
+              "value": "={{ JSON.parse($json.output[0].content[0].text).time || $('Buscar Estado Pendiente').item.json.time }}",
+              "type": "string"
+            },
+            {
+              "id": "merge-duration",
+              "name": "durationMin",
+              "value": "={{ JSON.parse($json.output[0].content[0].text).durationMin || $('Buscar Estado Pendiente').item.json.durationMin }}",
+              "type": "number"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $('Unificar Datos').item.json.chatId }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name",
+              "name": "userName",
+              "value": "={{ $('Unificar Datos').item.json.userName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1056,
+        3040
+      ],
+      "id": "0593c3b1-32e4-4140-9ea9-9447c9c40c00",
+      "name": "Fusionar Estado"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "wrap-parsed",
+              "name": "parsed",
+              "value": "={{ (() => {\n  const intent = $json.intent;\n  const missing = [];\n  \n  if (intent === 'ADD_REMINDER' || intent === 'ADD_EVENT') {\n    if (!$json.date) missing.push('date');\n    if (!$json.time) missing.push('time');\n    if (intent === 'ADD_EVENT' && !$json.durationMin) missing.push('durationMin');\n  }\n  \n  return {\n    intent: $json.intent,\n    title: $json.title,\n    text: $json.text,\n    date: $json.date,\n    time: $json.time,\n    durationMin: $json.durationMin,\n    missing: missing,\n    needsConfirm: missing.length > 0\n  };\n})() }}",
+              "type": "object"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $json.chatId }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name",
+              "name": "userName",
+              "value": "={{ $json.userName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -832,
+        3040
+      ],
+      "id": "e08a3815-a715-45ae-9de6-70f81665039b",
+      "name": "Validar Completo"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "parse-json",
+              "name": "parsed",
+              "value": "={{ JSON.parse($json.output[0].content[0].text) }}",
+              "type": "object"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $('Unificar Datos').item.json.chatId }}",
+              "type": "number"
+            },
+            {
+              "id": "user-name",
+              "name": "userName",
+              "value": "={{ $('Unificar Datos').item.json.userName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1056,
+        3232
+      ],
+      "id": "8609740d-98a1-45a3-84e5-0d9ada203f69",
+      "name": "Parsear Respuesta"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4o Mini"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Clasifica el mensaje.\n\nUsuario: {{ $('Unificar Datos').item.json.userName }}\nMensaje: \"{{ $('Unificar Datos').item.json.userText }}\"\nHoy: {{ $now.toFormat('yyyy-MM-dd HH:mm') }}\n\nCategorías:\n- ADD_REMINDER: \"recuérdame\"\n- ADD_EVENT: \"agenda\", \"reunión\"\n- ADD_NOTE: \"anota\"\n- QUERY_TODAY: \"qué tengo hoy\"\n- HELP: \"ayuda\"\n\nInterpreta:\n- \"mañana\" → {{ $now.plus({days:1}).toFormat('yyyy-MM-dd') }}\n- \"8pm\" → \"20:00\"\n\nJSON:\n{\n  \"intent\": \"ADD_REMINDER|ADD_EVENT|ADD_NOTE|QUERY_TODAY|HELP\",\n  \"title\": \"string\" o null,\n  \"text\": \"string\" o null,\n  \"date\": \"YYYY-MM-DD\" o null,\n  \"time\": \"HH:mm\" o null,\n  \"durationMin\": número o null,\n  \"missing\": [\"campos faltantes\"],\n  \"needsConfirm\": true/false\n}"
+            },
+            {
+              "content": "={{ $('Unificar Datos').item.json.userText }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -1408,
+        3232
+      ],
+      "id": "f3ca15bf-16e1-4a45-a9e4-35776d72fc55",
+      "name": "Clasificar Intent",
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "needs-confirm",
+              "leftValue": "={{ $json.parsed.needsConfirm }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -608,
+        3136
+      ],
+      "id": "b8537410-10c6-4c8b-8be1-164c91238ace",
+      "name": "¿Necesita confirmar?"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "MemoriaAsistenteIA"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "memoria"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatId": "={{ $json.chatId }}",
+            "intent": "={{ $json.intent }}",
+            "title": "={{ $json.title }}",
+            "text": "={{ $json.text }}",
+            "date": "={{ $json.date }}",
+            "time": "={{ $json.time }}",
+            "durationMin": "={{ $json.durationMin }}",
+            "missing": "={{ JSON.stringify($json.missing) }}",
+            "timestamp": "={{ $now.toISO() }}",
+            "expiresAt": "={{ $now.plus({hours: 1}).toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        496,
+        2784
+      ],
+      "id": "adabb24a-fab3-42d1-8e99-df9e62d11ce3",
+      "name": "Guardar Estado",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "clear",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "MemoriaAsistenteIA"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "memoria"
+        },
+        "clear": "specificRows",
+        "startIndex": "={{ $('Buscar Estado Pendiente').item.json.row_number }}"
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -384,
+        3232
+      ],
+      "id": "73d81948-b6e7-4632-8b41-6445bc2d2031",
+      "name": "Borrar Estado",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "missing-both",
+                    "leftValue": "={{ $json.parsed.missing.includes('date') && $json.parsed.missing.includes('time') }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "falta_fecha_y_hora"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "missing-time",
+                    "leftValue": "={{ $json.parsed.missing.includes('time') }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "falta_hora"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "missing-date",
+                    "leftValue": "={{ $json.parsed.missing.includes('date') }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "falta_fecha"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "missing-duration",
+                    "leftValue": "={{ $json.parsed.missing.includes('durationMin') }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "falta_duracion"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -384,
+        2720
+      ],
+      "id": "ef086c0c-9d22-458d-b122-ebb65dbbb5fa",
+      "name": "Qué falta"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "question",
+              "name": "question",
+              "value": "={{ $('Parsear Respuesta').item.json.userName || $('Validar Completo').item.json.userName }}, ¿para qué día y a qué hora?\n\nEjemplo: \"mañana 8pm\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        2464
+      ],
+      "id": "feb65383-094d-4eb1-8371-bf36d76f0dc7",
+      "name": "Pregunta: fecha y hora"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "question",
+              "name": "question",
+              "value": "¿A qué hora?\n\nEjemplo: \"8pm\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        2656
+      ],
+      "id": "4fe75d68-0126-4b82-bd72-b92175907db6",
+      "name": "Pregunta: hora"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "question",
+              "name": "question",
+              "value": "¿Para qué día?\n\nEjemplo: \"mañana\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        2848
+      ],
+      "id": "9dd8981d-1fc7-4114-94d6-f18e0e2cd6d0",
+      "name": "Pregunta: fecha"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "question",
+              "name": "question",
+              "value": "¿Cuánto durará?\n\nEjemplo: \"1 hora\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        3040
+      ],
+      "id": "d6754150-31ee-4fa6-84f1-6f176c2c138c",
+      "name": "Pregunta: duración"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Preparar para Guardar').item.json.chatId }}",
+        "text": "={{ $('Preparar para Guardar').item.json.question }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        2784
+      ],
+      "id": "9244d584-6899-4b59-9998-22e6130a1920",
+      "name": "Enviar Pregunta",
+      "webhookId": "275008be-1b68-43e3-bfb8-a6fb791488a5",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "is-reminder",
+                    "leftValue": "={{ $json.parsed.intent }}",
+                    "rightValue": "ADD_REMINDER",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "recordatorio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "is-event",
+                    "leftValue": "={{ $json.parsed.intent }}",
+                    "rightValue": "ADD_EVENT",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "evento"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "is-note",
+                    "leftValue": "={{ $json.parsed.intent }}",
+                    "rightValue": "ADD_NOTE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "nota"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "is-query",
+                    "leftValue": "={{ $json.parsed.intent }}",
+                    "rightValue": "QUERY_TODAY",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "consulta"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "is-help",
+                    "leftValue": "={{ $json.parsed.intent }}",
+                    "rightValue": "HELP",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ayuda"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -384,
+        3568
+      ],
+      "id": "0a263d5d-f118-42f8-8f79-cdee0f134fac",
+      "name": "Enrutar Intent"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.parsed.title }}",
+              "type": "string"
+            },
+            {
+              "id": "datetime",
+              "name": "dateTime",
+              "value": "={{ $json.parsed.date }}T{{ $json.parsed.time }}:00-06:00",
+              "type": "string"
+            },
+            {
+              "id": "date-formatted",
+              "name": "dateFormatted",
+              "value": "={{ $json.parsed.date }}",
+              "type": "string"
+            },
+            {
+              "id": "time-formatted",
+              "name": "timeFormatted",
+              "value": "={{ $json.parsed.time }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $json.chatId }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        3232
+      ],
+      "id": "f7715328-8b60-4e96-aadd-123babe34ff8",
+      "name": "Preparar Recordatorio"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "MemoriaAsistenteIA"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=1",
+          "mode": "list",
+          "cachedResultName": "recordatorios"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chatId": "={{ $json.chatId }}",
+            "title": "={{ $json.title }}",
+            "dateTime": "={{ $json.dateTime }}",
+            "sent": "FALSE",
+            "createdAt": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        64,
+        3120
+      ],
+      "id": "22aeaae2-f5cb-4854-b5e6-814abe6026db",
+      "name": "Guardar Recordatorio",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=✅ *Recordatorio agendado*\n\n📌 {{ $json.title }}\n🕐 {{ $json.dateFormatted }} a las {{ $json.timeFormatted }}\n\n¡Te avisaré!",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        3232
+      ],
+      "id": "e6346fae-c9ee-4c31-9008-c65ad38bc546",
+      "name": "Confirmar Recordatorio",
+      "webhookId": "f946d839-462b-4d94-90f5-4693ccd51331",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.parsed.title }}",
+              "type": "string"
+            },
+            {
+              "id": "start",
+              "name": "startISO",
+              "value": "={{ $json.parsed.date }}T{{ $json.parsed.time }}:00-06:00",
+              "type": "string"
+            },
+            {
+              "id": "duration",
+              "name": "durationMin",
+              "value": "={{ $json.parsed.durationMin || 60 }}",
+              "type": "number"
+            },
+            {
+              "id": "date-formatted",
+              "name": "dateFormatted",
+              "value": "={{ $json.parsed.date }}",
+              "type": "string"
+            },
+            {
+              "id": "time-start",
+              "name": "timeStart",
+              "value": "={{ $json.parsed.time }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        3424
+      ],
+      "id": "57961e12-71e5-498a-bc25-f14f174aabd6",
+      "name": "Preparar Evento"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "end-iso",
+              "name": "endISO",
+              "value": "={{ DateTime.fromISO($json.startISO).plus({minutes: $json.durationMin}).toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "time-end",
+              "name": "timeEnd",
+              "value": "={{ DateTime.fromISO($json.startISO).plus({minutes: $json.durationMin}).toFormat('HH:mm') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        3424
+      ],
+      "id": "995f269b-02eb-4df9-8cfa-c25a7e078668",
+      "name": "Calcular Hora Fin"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "TU_CALENDAR_ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "n8nTest"
+        },
+        "start": "={{ $json.startISO }}",
+        "end": "={{ $json.endISO }}",
+        "additionalFields": {
+          "description": "Creado por Asistente Personal",
+          "summary": "={{ $('Preparar Evento').item.json.title }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        3424
+      ],
+      "id": "4fb8635e-27ac-489e-a3f9-63fee16c746c",
+      "name": "Crear Evento",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Parsear Respuesta').item.json.chatId || $('Validar Completo').item.json.chatId }}",
+        "text": "=📅 *Evento creado*\n\n{{ $('Preparar Evento').item.json.title }}\n📆 {{ $('Preparar Evento').item.json.dateFormatted }}\n🕐 {{ $('Preparar Evento').item.json.timeStart }} - {{ $('Calcular Hora Fin').item.json.timeEnd }}\n\n¡Ya está en tu calendario!",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        3424
+      ],
+      "id": "23f31402-5d98-41b1-99b5-ba746642513c",
+      "name": "Confirmar Evento",
+      "webhookId": "cd9483b4-4f2b-4552-9f82-62dc01093328",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=📝 *Nota guardada*\n\n{{ $json.parsed.text }}\n\n✅ Listo",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        3616
+      ],
+      "id": "9172f2bd-d071-46dd-b4ec-7424fd5dd45f",
+      "name": "Confirmar Nota",
+      "webhookId": "d5e4cdb6-f465-4d1b-b18e-336ac129f2de",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "TU_CALENDAR_ID@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "n8nTest"
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -160,
+        3808
+      ],
+      "id": "04e464f9-507e-4418-b7ed-07f4c8918c49",
+      "name": "Consultar Hoy",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "events",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        64,
+        3808
+      ],
+      "id": "0564ecfa-feac-4798-a7fc-104105ed9dbc",
+      "name": "Agregar Eventos"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "format-agenda",
+              "name": "message",
+              "value": "=📅 *Agenda de hoy:*\n\n{{ $json.events.length === 0 ? 'No tienes nada para hoy. ¡Día libre!' : $json.events.map((e, i) => `${i+1}. ${DateTime.fromISO(e.start.dateTime || e.start.date).toFormat('HH:mm')} - ${e.summary || 'Sin título'}`).join('\\n') }}",
+              "type": "string"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $('Parsear Respuesta').item.json.chatId || $('Validar Completo').item.json.chatId }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        3808
+      ],
+      "id": "cd7bc898-847f-41c6-a591-07cf742d43ed",
+      "name": "Formatear Agenda"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        3808
+      ],
+      "id": "6edb21ab-cd6f-44ab-b01e-468c8e90002f",
+      "name": "Enviar Agenda",
+      "webhookId": "3ef6c115-cbb3-4a9c-8057-f06131990a7e",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "help-text",
+              "name": "message",
+              "value": "🤖 *Asistente Personal*\n\n⏰ *Recordatorios:*\n\"Recuérdame pagar luz mañana 8pm\"\n\n📅 *Eventos:*\n\"Agenda reunión viernes 10am\"\n\n📝 *Notas:*\n\"Anota comprar leche\"\n\n🔍 *Consultar:*\n\"¿Qué tengo hoy?\"\n\n💡 Usa texto o voz",
+              "type": "string"
+            },
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $json.chatId }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        4000
+      ],
+      "id": "08dc198c-8e19-4854-a587-6a0963d6870f",
+      "name": "Mensaje Ayuda"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        4000
+      ],
+      "id": "d843932f-d08e-4dd3-b024-cdc3f4c12f33",
+      "name": "Enviar Ayuda",
+      "webhookId": "206b3cd7-7f4d-4399-9c2e-7f68890acf72",
+      "credentials": {
+        "telegramApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "question",
+              "name": "question",
+              "value": "={{ $json.question }}",
+              "type": "string"
+            },
+            {
+              "id": "chatId",
+              "name": "chatId",
+              "value": "={{ $('Parsear Respuesta').item.json.chatId || $('Validar Completo').item.json.chatId }}",
+              "type": "number"
+            },
+            {
+              "id": "intent",
+              "name": "intent",
+              "value": "={{ $('Parsear Respuesta').item.json.parsed.intent || $('Validar Completo').item.json.parsed.intent }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $('Parsear Respuesta').item.json.parsed.title || $('Validar Completo').item.json.parsed.title }}",
+              "type": "string"
+            },
+            {
+              "id": "text",
+              "name": "text",
+              "value": "={{ $('Parsear Respuesta').item.json.parsed.text || $('Validar Completo').item.json.parsed.text }}",
+              "type": "string"
+            },
+            {
+              "id": "date",
+              "name": "date",
+              "value": "={{ $('Parsear Respuesta').item.json.parsed.date || $('Validar Completo').item.json.parsed.date }}",
+              "type": "string"
+            },
+            {
+              "id": "time",
+              "name": "time",
+              "value": "={{ $('Parsear Respuesta').item.json.parsed.time || $('Validar Completo').item.json.parsed.time }}",
+              "type": "string"
+            },
+            {
+              "id": "durationMin",
+              "name": "durationMin",
+              "value": "={{ $('Parsear Respuesta').item.json.parsed.durationMin || $('Validar Completo').item.json.parsed.durationMin }}",
+              "type": "number"
+            },
+            {
+              "id": "missing",
+              "name": "missing",
+              "value": "={{ $('Parsear Respuesta').item.json.parsed.missing || $('Validar Completo').item.json.parsed.missing }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        2784
+      ],
+      "id": "50dca679-7f9b-40f4-a334-4e81b738b9f4",
+      "name": "Preparar para Guardar"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "¿Es voz o texto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es voz o texto?": {
+      "main": [
+        [
+          {
+            "node": "Obtener voz",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mensaje 'Escuchando'",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalizar Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener voz": {
+      "main": [
+        [
+          {
+            "node": "Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Texto": {
+      "main": [
+        [
+          {
+            "node": "Unificar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Voz": {
+      "main": [
+        [
+          {
+            "node": "Unificar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unificar Datos": {
+      "main": [
+        [
+          {
+            "node": "Buscar Estado Pendiente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Estado Pendiente": {
+      "main": [
+        [
+          {
+            "node": "¿Tiene Estado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene Estado?": {
+      "main": [
+        [
+          {
+            "node": "Completar Campos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Clasificar Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Completar Campos": {
+      "main": [
+        [
+          {
+            "node": "Fusionar Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fusionar Estado": {
+      "main": [
+        [
+          {
+            "node": "Validar Completo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Completo": {
+      "main": [
+        [
+          {
+            "node": "¿Necesita confirmar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar Intent": {
+      "main": [
+        [
+          {
+            "node": "Parsear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Respuesta": {
+      "main": [
+        [
+          {
+            "node": "¿Necesita confirmar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Necesita confirmar?": {
+      "main": [
+        [
+          {
+            "node": "Qué falta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enrutar Intent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Borrar Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qué falta": {
+      "main": [
+        [
+          {
+            "node": "Pregunta: fecha y hora",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pregunta: hora",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pregunta: fecha",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pregunta: duración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pregunta: fecha y hora": {
+      "main": [
+        [
+          {
+            "node": "Preparar para Guardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pregunta: hora": {
+      "main": [
+        [
+          {
+            "node": "Preparar para Guardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pregunta: fecha": {
+      "main": [
+        [
+          {
+            "node": "Preparar para Guardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pregunta: duración": {
+      "main": [
+        [
+          {
+            "node": "Preparar para Guardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar para Guardar": {
+      "main": [
+        [
+          {
+            "node": "Guardar Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar Estado": {
+      "main": [
+        [
+          {
+            "node": "Enviar Pregunta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrutar Intent": {
+      "main": [
+        [
+          {
+            "node": "Preparar Recordatorio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar Evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Confirmar Nota",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Consultar Hoy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensaje Ayuda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Recordatorio": {
+      "main": [
+        [
+          {
+            "node": "Guardar Recordatorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar Recordatorio": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Recordatorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Evento": {
+      "main": [
+        [
+          {
+            "node": "Calcular Hora Fin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular Hora Fin": {
+      "main": [
+        [
+          {
+            "node": "Crear Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Evento": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar Hoy": {
+      "main": [
+        [
+          {
+            "node": "Agregar Eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agregar Eventos": {
+      "main": [
+        [
+          {
+            "node": "Formatear Agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear Agenda": {
+      "main": [
+        [
+          {
+            "node": "Enviar Agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensaje Ayuda": {
+      "main": [
+        [
+          {
+            "node": "Enviar Ayuda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "16e2e838-e675-49ee-8bf3-56da98f43949",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "hDp_p8KqSfYFcQ8fbRtVT",
+  "tags": []
+}

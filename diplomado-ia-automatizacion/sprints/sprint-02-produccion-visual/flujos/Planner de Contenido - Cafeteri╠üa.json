@@ -1,0 +1,463 @@
+{
+  "name": "Planner de Contenido - Cafetería",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"negocio\": \"Cafetería Nube\",\n  \"contexto\": \"TODO: pega aquí el contexto (ubicación, propuesta de valor, audiencia, tono de marca, horarios, productos estrella, etc.)\",\n  \"cantidad_posts\": 3,\n  \"cantidad_stories\": 2,\n  \"cantidad_reels\": 2,\n  \"promos_semana\": \"Martes 2x1 en capuccino, Jueves panqué recién horneado, Sábado bebidas frías 10% off\"\n}",
+        "options": {}
+      },
+      "id": "940fcbbe-68b3-4993-8272-d031dec95c04",
+      "name": "Configuracion Semanal",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3408,
+        -528
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Genera un plan semanal de contenido para {{ $json.negocio }}.\n\nContexto del negocio:\n{{ $json.contexto || '' }}\n\nPromociones/agenda:\n{{ $json.promos_semana }}\n\nDISTRIBUCIÓN:\n- {{ $json.cantidad_posts }} posts con imagen (tipo: \"post\")\n- {{ $json.cantidad_stories }} stories con imagen (tipo: \"story\")\n- {{ $json.cantidad_reels }} reels en video (tipo: \"reel\")\n\nREGLAS:\n- Fecha inicial: {{ $now.plus({days: 1}).toFormat('yyyy-MM-dd') }}\n- Español de México.\n- Mezcla venta con contenido de valor (comunidad/info).\n- NO uses emojis en campos de estructura. El campo \"caption\" SÍ puede tener emojis.\n\nFORMATO DE SALIDA (OBLIGATORIO):\nDevuelve UN SOLO objeto JSON con esta forma exacta:\n\n{\n  \"ideas\": [\n    {\n      \"fecha_objetivo\": \"YYYY-MM-DD\",\n      \"tipo\": \"post|story|reel\",\n      \"objetivo\": \"venta|comunidad|info\",\n      \"titulo\": \"titulo corto sin emojis\",\n      \"idea\": \"descripción clara\",\n      \"tono\": \"calido|profesional|divertido\",\n      \"estilo_visual\": \"minimal, luz cálida\",\n      \"prompt_imagen\": \"imagen de [descripción], sin texto, fondo limpio\",\n      \"caption\": \"texto para publicar (aquí sí puedes usar emojis)\",\n      \"status\": \"pending\",\n      \"asset_type\": \"image|video\",\n      \"aspect_ratio\": \"1:1|9:16\",\n      \"duracion_sec\": 0,\n      \"script_video\": \"\",\n      \"step\": \"plan\"\n    }\n  ]\n}\n\nREGLAS POR TIPO:\n- post: asset_type=\"image\", aspect_ratio=\"1:1\", duracion_sec=0, script_video=\"\"\n- story: asset_type=\"image\", aspect_ratio=\"9:16\", duracion_sec=0, script_video=\"\"\n- reel: asset_type=\"video\", aspect_ratio=\"9:16\", duracion_sec=15,\n        script_video = guión completo de 30-40 palabras que incluya:\n                      1) Gancho inicial (3-5 palabras llamativas)\n                      2) Desarrollo del mensaje (20-25 palabras)\n                      3) Call to action final (5-7 palabras)\n                      Ejemplo: \"¿Sabías esto del café? El capuccino perfecto necesita espuma cremosa y temperatura precisa.Ven hoy y prueba nuestro 2x1. Te esperamos en Cafetería Nube.\"\n\nASIGNACIÓN DE FECHAS:\n- Reparte las ideas a partir de la fecha inicial, en días consecutivos.\n- Si hay más de una pieza por día, repite la fecha.\n\nCRÍTICO:\n- Devuelve SOLO el JSON. Sin markdown, sin backticks, sin texto extra.\n- No omitas campos. No inventes campos adicionales."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "instructions": "=Eres un estratega de contenido para redes sociales. Responde con JSON válido y nada más.",
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "temperature": 0.6
+        }
+      },
+      "id": "53f8595b-1a75-47cf-82a2-0c7cd1acda02",
+      "name": "Generar Ideas OpenAI (JSON)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        3632,
+        -528
+      ],
+      "typeVersion": 2.1,
+      "credentials": {
+        "openAiApi": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output[0].content[0].text.ideas",
+        "options": {}
+      },
+      "id": "c4e9b929-6639-4213-8b81-db07c5ce3e38",
+      "name": "Separar Items",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        3984,
+        -528
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Cafeteria_Nube_v2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2134022340,
+          "mode": "list",
+          "cachedResultName": "Ideas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/TU_GOOGLE_SHEET_ID/edit#gid=2134022340"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ 'NUBE-' + $json.fecha_objetivo.replace(/-/g, '') + '-' + $json.tipo.toUpperCase() + '-' + String($itemIndex + 1).padStart(2, '0') }}",
+            "fecha_objetivo": "={{ $json.fecha_objetivo }}",
+            "tipo": "={{ $json.tipo }}",
+            "objetivo": "={{ $json.objetivo }}",
+            "titulo": "={{ $json.titulo }}",
+            "idea": "={{ $json.idea }}",
+            "tono": "={{ $json.tono }}",
+            "estilo_visual": "={{ $json.estilo_visual }}",
+            "prompt_imagen": "={{ $json.prompt_imagen }}",
+            "caption": "={{ $json.caption }}",
+            "status": "={{ $json.status }}",
+            "created_at": "={{ $now.toISO() }}",
+            "updated_at": "={{ $now.toISO() }}",
+            "asset_type": "={{ $json.asset_type }}",
+            "aspect_ratio": "={{ $json.aspect_ratio }}",
+            "duracion_sec": "={{ $json.duracion_sec }}",
+            "step": "={{ $json.step }}",
+            "script_video": "={{ $json.script_video }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_objetivo",
+              "displayName": "fecha_objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "objetivo",
+              "displayName": "objetivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titulo",
+              "displayName": "titulo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "idea",
+              "displayName": "idea",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tono",
+              "displayName": "tono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estilo_visual",
+              "displayName": "estilo_visual",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prompt_imagen",
+              "displayName": "prompt_imagen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "image_url",
+              "displayName": "image_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "canva_export_url",
+              "displayName": "canva_export_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "asset_type",
+              "displayName": "asset_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "aspect_ratio",
+              "displayName": "aspect_ratio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "duracion_sec",
+              "displayName": "duracion_sec",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "script_video",
+              "displayName": "script_video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "heygen_video_id",
+              "displayName": "heygen_video_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "heygen_video_url",
+              "displayName": "heygen_video_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "drive_file_url",
+              "displayName": "drive_file_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "final_asset_url",
+              "displayName": "final_asset_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "step",
+              "displayName": "step",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "id": "2410e459-b4b3-4ea8-90e1-a4752aba232f",
+      "name": "Guardar en Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4208,
+        -528
+      ],
+      "typeVersion": 4.7,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TU_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        3184,
+        -528
+      ],
+      "id": "c76817cc-86cc-43dd-a8fb-6ad1b2eb409b",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Configuracion Semanal": {
+      "main": [
+        [
+          {
+            "node": "Generar Ideas OpenAI (JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar Ideas OpenAI (JSON)": {
+      "main": [
+        [
+          {
+            "node": "Separar Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar Items": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Configuracion Semanal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "d4667b61-44ff-45d1-8f95-ef910b6fb463",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7bf8f05494a279efe00ce2029f87d34fcc7f72940456794ed3ff4ad4fdc5ad57"
+  },
+  "id": "JMvhLlsijhnGaXmDClyzs",
+  "tags": [
+    {
+      "updatedAt": "2026-01-27T20:19:05.320Z",
+      "createdAt": "2026-01-27T20:19:05.320Z",
+      "id": "FND7tLD6SjsGkzjx",
+      "name": "ejercicio"
+    },
+    {
+      "updatedAt": "2026-01-21T19:40:34.218Z",
+      "createdAt": "2026-01-21T19:40:34.218Z",
+      "id": "r5SXC5P8CB1BMnIO",
+      "name": "Sprint2"
+    },
+    {
+      "updatedAt": "2026-01-27T21:36:30.753Z",
+      "createdAt": "2026-01-27T21:36:30.753Z",
+      "id": "vaR7mJn5CV28oKVt",
+      "name": "semana4"
+    }
+  ]
+}
